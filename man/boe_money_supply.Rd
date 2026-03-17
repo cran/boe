@@ -39,7 +39,10 @@ of England. Available from June 1982.
 }
 \examples{
 \donttest{
+op <- options(boe.cache_dir = tempdir())
 boe_money_supply(from = "2000-01-01")
+options(op)
 }
 
 }
+\concept{money}

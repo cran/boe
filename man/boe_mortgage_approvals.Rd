@@ -39,7 +39,15 @@ Available from April 1993.
 }
 \examples{
 \donttest{
+op <- options(boe.cache_dir = tempdir())
 boe_mortgage_approvals(from = "2015-01-01")
+options(op)
 }
 
 }
+\seealso{
+Other credit and housing: 
+\code{\link{boe_consumer_credit}()},
+\code{\link{boe_mortgage_rates}()}
+}
+\concept{credit and housing}

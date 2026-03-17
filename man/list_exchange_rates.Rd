@@ -22,3 +22,8 @@ from the Bank of England exchange rate series.
 list_exchange_rates()
 
 }
+\seealso{
+Other exchange rates: 
+\code{\link{boe_exchange_rate}()}
+}
+\concept{exchange rates}

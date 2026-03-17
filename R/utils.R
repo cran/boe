@@ -11,6 +11,12 @@ BOE_API <- "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolum
 #' @return A data frame with columns: date, code, value.
 #' @noRd
 boe_fetch <- function(series_codes, from, to = Sys.Date(), cache = TRUE) {
+  from <- as.Date(from)
+  to   <- as.Date(to)
+  if (from > to) {
+    cli::cli_abort("{.arg from} ({.val {from}}) must be before {.arg to} ({.val {to}}).")
+  }
+
   from_str <- format_boe_date(from)
   to_str   <- format_boe_date(to)
   codes    <- paste(series_codes, collapse = ",")
@@ -89,10 +95,16 @@ parse_boe_csv <- function(path, expected_codes) {
   out
 }
 
+#' Get the cache directory, respecting the boe.cache_dir option
+#' @noRd
+boe_cache_dir <- function() {
+  getOption("boe.cache_dir", default = tools::R_user_dir("boe", "cache"))
+}
+
 #' Download a URL with local caching
 #' @noRd
 download_cached_boe <- function(url, cache = TRUE) {
-  cache_dir  <- tools::R_user_dir("boe", "cache")
+  cache_dir  <- boe_cache_dir()
   ext        <- ".csv"
   cache_file <- file.path(cache_dir, paste0(digest_url_boe(url), ext))
 
@@ -106,6 +118,12 @@ download_cached_boe <- function(url, cache = TRUE) {
 
   tryCatch(
     httr2::request(url) |>
+      httr2::req_user_agent("boe R package (https://github.com/charlescoverdale/boe)") |>
+      httr2::req_throttle(rate = 5 / 10) |>
+      httr2::req_retry(
+        max_tries    = 3,
+        is_transient = function(resp) httr2::resp_status(resp) %in% c(429L, 503L)
+      ) |>
       httr2::req_timeout(60) |>
       httr2::req_perform(path = cache_file),
     error = function(e) {

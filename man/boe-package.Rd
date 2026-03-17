@@ -4,9 +4,9 @@
 \name{boe-package}
 \alias{boe}
 \alias{boe-package}
-\title{boe: Download Data from the Bank of England Statistical Database}
+\title{boe: Download Data from the 'Bank of England' Statistical Database}
 \description{
-Provides functions to download and tidy statistical data published by the Bank of England \url{https://www.bankofengland.co.uk}. Covers Bank Rate, SONIA, gilt yields, exchange rates, mortgage rates, mortgage approvals, consumer credit, and money supply. Series are fetched from the Bank of England Interactive Statistical Database using its CSV endpoint. Data is cached locally between sessions.
+Provides functions to download and tidy statistical data published by the 'Bank of England' \url{https://www.bankofengland.co.uk}. Covers Bank Rate, 'SONIA', gilt yields, exchange rates, mortgage rates, mortgage approvals, consumer credit, and money supply. Series are fetched from the 'Bank of England Interactive Statistical Database' using its CSV endpoint. Data is cached locally between sessions.
 }
 \seealso{
 Useful links:
@@ -20,4 +20,13 @@ Useful links:
 \strong{Maintainer}: Charles Coverdale \email{charlesfcoverdale@gmail.com}
 
 }
+\concept{Bank of England}
+\concept{SONIA}
+\concept{UK central bank}
+\concept{exchange rates}
+\concept{interest rates}
+\concept{monetary policy}
+\concept{money supply}
+\concept{mortgage rates}
+\concept{yield curve}
 \keyword{internal}

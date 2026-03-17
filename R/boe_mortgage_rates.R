@@ -23,13 +23,16 @@
 #'
 #' @examples
 #' \donttest{
+#' op <- options(boe.cache_dir = tempdir())
 #' # All mortgage rate types since 2015
 #' boe_mortgage_rates(from = "2015-01-01")
 #'
 #' # 2-year fixed only
 #' boe_mortgage_rates(type = "2yr_fixed", from = "2020-01-01")
+#' options(op)
 #' }
 #'
+#' @family credit and housing
 #' @export
 boe_mortgage_rates <- function(type  = c("2yr_fixed", "3yr_fixed", "5yr_fixed", "svr"),
                                from  = "1995-01-01",

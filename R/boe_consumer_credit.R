@@ -24,9 +24,12 @@
 #'
 #' @examples
 #' \donttest{
+#' op <- options(boe.cache_dir = tempdir())
 #' boe_consumer_credit(from = "2015-01-01")
+#' options(op)
 #' }
 #'
+#' @family credit and housing
 #' @export
 boe_consumer_credit <- function(type  = c("total", "credit_card", "other"),
                                 from  = "1993-04-01",

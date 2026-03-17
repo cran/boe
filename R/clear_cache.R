@@ -10,16 +10,19 @@
 #'
 #' @examples
 #' \donttest{
+#' op <- options(boe.cache_dir = tempdir())
 #' # Remove files older than 7 days
 #' clear_cache(max_age_days = 7)
 #'
 #' # Remove everything
 #' clear_cache()
+#' options(op)
 #' }
 #'
+#' @family data access
 #' @export
 clear_cache <- function(max_age_days = NULL) {
-  cache_dir <- tools::R_user_dir("boe", "cache")
+  cache_dir <- boe_cache_dir()
 
   if (!dir.exists(cache_dir)) {
     cli::cli_alert_info("No cache directory found.")

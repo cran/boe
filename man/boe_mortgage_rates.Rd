@@ -40,11 +40,19 @@ England, including fixed-rate products and the standard variable rate
 }
 \examples{
 \donttest{
+op <- options(boe.cache_dir = tempdir())
 # All mortgage rate types since 2015
 boe_mortgage_rates(from = "2015-01-01")
 
 # 2-year fixed only
 boe_mortgage_rates(type = "2yr_fixed", from = "2020-01-01")
+options(op)
 }
 
 }
+\seealso{
+Other credit and housing: 
+\code{\link{boe_consumer_credit}()},
+\code{\link{boe_mortgage_approvals}()}
+}
+\concept{credit and housing}

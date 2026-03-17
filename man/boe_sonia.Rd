@@ -38,7 +38,15 @@ reference rate for sterling markets. Available daily from January 1997.
 }
 \examples{
 \donttest{
+op <- options(boe.cache_dir = tempdir())
 boe_sonia(from = "2020-01-01")
+options(op)
 }
 
 }
+\seealso{
+Other interest rates: 
+\code{\link{boe_bank_rate}()},
+\code{\link{boe_yield_curve}()}
+}
+\concept{interest rates}

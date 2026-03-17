@@ -1,14 +1,14 @@
 Package: boe
-Title: Download Data from the Bank of England Statistical Database
-Version: 0.1.0
+Title: Download Data from the 'Bank of England' Statistical Database
+Version: 0.1.2
 Authors@R: 
     person("Charles", "Coverdale", , "charlesfcoverdale@gmail.com",
            role = c("aut", "cre"))
 Description: Provides functions to download and tidy statistical data
-    published by the Bank of England <https://www.bankofengland.co.uk>.
-    Covers Bank Rate, SONIA, gilt yields, exchange rates, mortgage rates,
+    published by the 'Bank of England' <https://www.bankofengland.co.uk>.
+    Covers Bank Rate, 'SONIA', gilt yields, exchange rates, mortgage rates,
     mortgage approvals, consumer credit, and money supply. Series are
-    fetched from the Bank of England Interactive Statistical Database
+    fetched from the 'Bank of England Interactive Statistical Database'
     using its CSV endpoint. Data is cached locally between sessions.
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -21,8 +21,8 @@ URL: https://github.com/charlescoverdale/boe
 BugReports: https://github.com/charlescoverdale/boe/issues
 Depends: R (>= 4.1.0)
 NeedsCompilation: no
-Packaged: 2026-03-08 17:24:20 UTC; charlescoverdale
+Packaged: 2026-03-16 18:11:47 UTC; charlescoverdale
 Author: Charles Coverdale [aut, cre]
 Maintainer: Charles Coverdale <charlesfcoverdale@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-03-12 09:00:23 UTC
+Date/Publication: 2026-03-17 08:31:07 UTC

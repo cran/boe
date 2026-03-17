@@ -19,11 +19,18 @@ Removes cached data files downloaded from the Bank of England.
 }
 \examples{
 \donttest{
+op <- options(boe.cache_dir = tempdir())
 # Remove files older than 7 days
 clear_cache(max_age_days = 7)
 
 # Remove everything
 clear_cache()
+options(op)
 }
 
 }
+\seealso{
+Other data access: 
+\code{\link{boe_get}()}
+}
+\concept{data access}

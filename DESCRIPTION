@@ -1,6 +1,6 @@
 Package: boe
 Title: Download Data from the 'Bank of England' Statistical Database
-Version: 0.1.2
+Version: 0.2.0
 Authors@R: 
     person("Charles", "Coverdale", , "charlesfcoverdale@gmail.com",
            role = c("aut", "cre"))
@@ -15,14 +15,16 @@ Encoding: UTF-8
 Language: en-GB
 RoxygenNote: 7.3.3
 Imports: cli (>= 3.6.0), httr2 (>= 1.0.0), tools
-Suggests: testthat (>= 3.0.0), ggplot2, scales
+Suggests: testthat (>= 3.0.0), ggplot2, scales, readxl (>= 1.4.0)
 Config/testthat/edition: 3
-URL: https://github.com/charlescoverdale/boe
+URL: https://charlescoverdale.github.io/boe/,
+        https://github.com/charlescoverdale/boe
 BugReports: https://github.com/charlescoverdale/boe/issues
 Depends: R (>= 4.1.0)
+LazyData: true
 NeedsCompilation: no
-Packaged: 2026-03-16 18:11:47 UTC; charlescoverdale
+Packaged: 2026-04-27 18:51:42 UTC; charlescoverdale
 Author: Charles Coverdale [aut, cre]
 Maintainer: Charles Coverdale <charlesfcoverdale@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-03-17 08:31:07 UTC
+Date/Publication: 2026-04-27 19:20:02 UTC

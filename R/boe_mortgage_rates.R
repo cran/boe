@@ -69,5 +69,11 @@ boe_mortgage_rates <- function(type  = c("2yr_fixed", "3yr_fixed", "5yr_fixed", 
   rownames(result) <- NULL
 
   cli::cli_progress_done()
-  result
+  new_boe_tbl(result, query = list(
+    series_codes  = unname(codes),
+    from          = from,
+    to            = to,
+    frequency     = "monthly",
+    function_name = "boe_mortgage_rates"
+  ))
 }

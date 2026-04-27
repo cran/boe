@@ -52,5 +52,11 @@ boe_bank_rate <- function(from      = "1975-01-02",
   )
 
   cli::cli_progress_done()
-  result
+  new_boe_tbl(result, query = list(
+    series_codes  = code,
+    from          = from,
+    to            = to,
+    frequency     = frequency,
+    function_name = "boe_bank_rate"
+  ))
 }

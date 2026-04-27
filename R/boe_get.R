@@ -56,5 +56,10 @@ boe_get <- function(series_codes,
   out <- boe_fetch(series_codes, from = from, to = to, cache = cache)
 
   cli::cli_progress_done()
-  out
+  new_boe_tbl(out, query = list(
+    series_codes  = series_codes,
+    from          = from,
+    to            = to,
+    function_name = "boe_get"
+  ))
 }

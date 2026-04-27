@@ -1,6 +1,6 @@
 # boe
 
-[![CRAN status](https://www.r-pkg.org/badges/version/boe)](https://CRAN.R-project.org/package=boe) [![CRAN downloads](https://cranlogs.r-pkg.org/badges/boe)](https://cran.r-project.org/package=boe) [![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CRAN status](https://www.r-pkg.org/badges/version/boe)](https://CRAN.R-project.org/package=boe) [![CRAN downloads](https://cranlogs.r-pkg.org/badges/boe)](https://cran.r-project.org/package=boe) [![Total Downloads](https://cranlogs.r-pkg.org/badges/grand-total/boe)](https://CRAN.R-project.org/package=boe) [![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 An R package for downloading data from the [Bank of England](https://www.bankofengland.co.uk) Statistical Database.
 
@@ -15,6 +15,12 @@ The Bank publishes thousands of statistical time series through its [Interactive
 The [`bbk`](https://cran.r-project.org/package=bbk) package on CRAN provides a single generic function for Bank of England data (`bbk::boe_data()`), but it is primarily a Bundesbank client - the Bank of England is one of seven central banks it covers, and its BoE support amounts to a raw API wrapper. You still need to know the series codes, and the output requires further processing.
 
 This package is different. It is built specifically for the Bank of England and provides named, documented functions for the series people actually use - `boe_bank_rate()`, `boe_mortgage_rates()`, `boe_yield_curve()`, and so on. You don't need to know that Bank Rate is `IUDBEDR` or that a 2-year fixed mortgage rate is `IUMBV34`. The package handles series codes, date formatting, caching, and error handling internally.
+
+Beyond the IADB wrappers, it also ships:
+
+- `boe_curve()`: the full Anderson-Sleath fitted yield curves (nominal, real, implied inflation, OIS) at all maturities, parsed from the BoE's published Excel archive.
+- `boe_search()` / `boe_browse()`: a built-in catalogue of wrapped series so you can find codes from R rather than the website.
+- A `boe_tbl` S3 class so every returned data frame carries provenance metadata (series codes, date range, frequency, fetch timestamp).
 
 ## Why does this package exist?
 
@@ -54,19 +60,44 @@ devtools::install_github("charlescoverdale/boe")
 
 ## Functions
 
+**Data access:**
+
 | Function | Description | From | To |
 |---|---|---|---|
 | `boe_get()` | Fetch any series by BoE series code | Any | Present |
 | `boe_bank_rate()` | Official Bank Rate (daily or monthly) | 1975 | Present |
 | `boe_sonia()` | SONIA risk-free reference rate (daily, monthly, or annual) | 1997 | Present |
 | `boe_yield_curve()` | Nominal and real gilt yields at 5yr, 10yr, 20yr maturities | 1985 | Present |
+| `boe_curve()` | Full Anderson-Sleath fitted curves (nominal / real / inflation / OIS, spot or forward) at all maturities | Latest month | Present |
 | `boe_exchange_rate()` | Daily sterling spot rates for 27 currencies | 1975 | Present |
-| `list_exchange_rates()` | Catalogue of available currency codes | - | -|
 | `boe_mortgage_rates()` | Quoted mortgage rates (2yr/3yr/5yr fixed, SVR) | 1995 | Present |
 | `boe_mortgage_approvals()` | Monthly mortgage approvals for house purchase | 1993 | Present |
 | `boe_consumer_credit()` | Consumer credit outstanding (total, cards, other) | 1993 | Present |
 | `boe_money_supply()` | M4 broad money amounts outstanding | 1982 | Present |
-| `clear_cache()` | Delete locally cached data files | - | -|
+
+**Monetary policy:**
+
+| Function | Description | From | To |
+|---|---|---|---|
+| `boe_mpc_decisions()` | MPC rate-change events: date, new rate, change in bps, direction | 1997 | Present |
+| `boe_mpc_votes()` | Full MPC voting record, one row per (meeting, member), with dissent flag | 1997 | Present |
+| `boe_mpr_forecasts()` | Monetary Policy Report forecast paths (CPI inflation, GDP growth, GDP level, unemployment, Bank Rate) | 2019 | Present |
+
+**Discovery:**
+
+| Function | Description |
+|---|---|
+| `boe_series` | Exported catalogue of every wrapped series (code, title, category, frequency, unit, start date) |
+| `boe_search()` | Keyword search over `boe_series` |
+| `boe_browse()` | Filter `boe_series` by category or frequency |
+| `list_exchange_rates()` | Currency codes available to `boe_exchange_rate()` |
+
+**Cache:**
+
+| Function | Description |
+|---|---|
+| `boe_cache_info()` | Report cache directory, file count, total size |
+| `clear_cache()` | Delete locally cached data files |
 
 ---
 
@@ -130,6 +161,33 @@ boe_yield_curve(from = "2024-01-01")
 # Real yields
 boe_yield_curve(from = "2024-01-01", type = "real", measure = "zero_coupon")
 ```
+
+---
+
+### The full Anderson-Sleath fitted curve
+
+For the complete yield curve at every published maturity (typically 0.5 years to 25 or 40 years, in 0.5-year steps), use `boe_curve()`. This parses the BoE's published Excel archive and covers four curves: nominal gilt, real (index-linked) gilt, implied inflation (breakeven), and overnight index swap (OIS).
+
+```r
+# Latest nominal spot curve at all maturities
+nc <- boe_curve(curve = "nominal", measure = "spot")
+head(nc, 6)
+#>         date maturity_years rate_pct
+#>   2026-04-01            0.5    3.95
+#>   2026-04-01            1.0    4.10
+#>   2026-04-01            1.5    4.13
+#>   2026-04-01            2.0    4.15
+#>   2026-04-01            2.5    4.16
+#>   2026-04-01            3.0    4.17
+
+# Implied inflation curve (breakeven inflation)
+boe_curve(curve = "inflation", measure = "spot")
+
+# OIS forward curve
+boe_curve(curve = "ois", measure = "spot")
+```
+
+Requires the `readxl` package (loaded lazily). Reference: Anderson and Sleath (2001), *New estimates of the UK real and nominal yield curves*, Bank of England Working Paper No. 126.
 
 ---
 
@@ -243,11 +301,104 @@ boe_get(c("IUDBEDR", "IUDSOIA"), from = "2024-01-01", to = "2024-01-10")
 
 ---
 
+### Tracking MPC decisions and votes
+
+```r
+# Every Bank Rate change since 1997
+decisions <- boe_mpc_decisions()
+tail(decisions, 5)
+#>         date new_rate_pct prev_rate_pct change_bps direction
+#>   2024-08-01         5.00          5.25        -25       cut
+#>   2024-11-07         4.75          5.00        -25       cut
+#>   2025-02-06         4.50          4.75        -25       cut
+#>   2025-08-07         4.25          4.50        -25       cut
+#>   2026-02-05         4.00          4.25        -25       cut
+
+# Full voting record: who dissented, and how
+votes <- boe_mpc_votes()
+recent_dissents <- subset(votes, dissent & date >= as.Date("2024-01-01"))
+head(recent_dissents)
+
+# How does Catherine L Mann vote?
+mann <- subset(votes, member == "Catherine L Mann")
+table(mann$dissent)
+```
+
+---
+
+### Forecasts from the Monetary Policy Report
+
+```r
+# Latest CPI inflation projections (one row per publication x horizon)
+cpi <- boe_mpr_forecasts(series = "cpi_inflation")
+head(cpi)
+#>         date horizon horizon_date        series value
+#>   2026-02-01 2026 Q1   2026-01-01 cpi_inflation   2.7
+#>   2026-02-01 2026 Q2   2026-04-01 cpi_inflation   2.6
+#>   2026-02-01 2026 Q3   2026-07-01 cpi_inflation   2.5
+
+# All five headline series for the most recent MPR
+all <- boe_mpr_forecasts()
+unique(all$series)
+#>   [1] "bank_rate" "cpi_inflation" "gdp_growth" "gdp_level" "unemployment"
+```
+
+Requires the `readxl` package. Note: this targets the post-2025 MPR file format; older releases use a different archive layout.
+
+---
+
+### Searching for a series
+
+```r
+# Keyword search across the catalogue
+boe_search("mortgage")
+
+# Filter by category and frequency
+boe_search(category = "interest_rates", frequency = "daily")
+
+# Browse without a keyword
+boe_browse(category = "exchange_rates")
+
+# The full catalogue is exported as a data frame
+head(boe_series)
+table(boe_series$category)
+#>     consumer_credit       exchange_rates       interest_rates
+#>                   3                   27                   14
+#>     monetary_aggregates    mortgage_market
+#>                       2                  6
+```
+
+---
+
+### Provenance
+
+Every result from a `boe_*()` function is a `boe_tbl` (a data frame with attached metadata). Printing shows a one-line provenance header, but it behaves like a normal data frame for everything else.
+
+```r
+br <- boe_bank_rate(from = "2024-01-01", frequency = "monthly")
+br
+#> # BoE [boe_bank_rate]: 1 series [IUMABEDR] · 16 obs · 2024-01-01 to 2025-04-30 · freq=monthly
+#>         date rate_pct
+#>   2024-01-31     5.25
+#>   2024-02-29     5.25
+#>   ...
+```
+
+---
+
 ## Caching
 
 All downloads are cached locally in your user cache directory. Subsequent calls return the cached copy instantly - no network request is made.
 
 ```r
+# Inspect the cache (path, file count, size, range)
+boe_cache_info()
+#> BoE cache
+#> * Path:  /Users/.../R/boe/cache
+#> * Files: 12
+#> * Size:  6.4 MB
+#> * Range: 2026-04-12 09:14:02 to 2026-04-25 11:30:18
+
 # Force a fresh download
 boe_bank_rate(from = "2020-01-01", cache = FALSE)
 
@@ -262,17 +413,36 @@ clear_cache()
 
 ## Related packages
 
-This package is part of a family of R packages for UK economic and fiscal data. They share a consistent interface - named functions, tidy data frames, local caching - and are designed to work together. All outputs join cleanly on date columns.
+This package is part of a suite of R packages for economic, financial, and policy data. They share a consistent interface (named functions, tidy data frames, local caching) and are designed to work together.
 
-| Package | What it covers |
+**Data access:**
+
+| Package | Source |
 |---|---|
-| [`ons`](https://github.com/charlescoverdale/ons) | ONS data (GDP, inflation, unemployment, wages, trade, house prices, population) |
-| [`hmrc`](https://github.com/charlescoverdale/hmrc) | HMRC tax receipts, corporation tax, stamp duty, R&D credits, and tax gap data |
-| [`obr`](https://github.com/charlescoverdale/obr) | OBR fiscal forecasts and the Public Finances Databank |
-| [`readecb`](https://github.com/charlescoverdale/readecb) | European Central Bank data (policy rates, HICP, exchange rates, yield curves) |
-| [`readoecd`](https://github.com/charlescoverdale/readoecd) | OECD data (GDP, unemployment, inflation, trade across 38 member countries) |
-| [`fred`](https://github.com/charlescoverdale/fred) | US Federal Reserve (FRED) data (800,000+ economic time series) |
-| [`inflateR`](https://github.com/charlescoverdale/inflateR) | Adjust values for inflation using CPI or GDP deflator data |
+| [`ons`](https://github.com/charlescoverdale/ons) | UK Office for National Statistics |
+| [`hmrc`](https://github.com/charlescoverdale/hmrc) | HM Revenue & Customs |
+| [`obr`](https://github.com/charlescoverdale/obr) | Office for Budget Responsibility |
+| [`ukhousing`](https://github.com/charlescoverdale/ukhousing) | UK Land Registry, EPC, Planning |
+| [`fred`](https://github.com/charlescoverdale/fred) | US Federal Reserve (FRED) |
+| [`readecb`](https://github.com/charlescoverdale/readecb) | European Central Bank |
+| [`readoecd`](https://github.com/charlescoverdale/readoecd) | OECD |
+| [`readnoaa`](https://github.com/charlescoverdale/readnoaa) | NOAA Climate Data |
+| [`readaec`](https://github.com/charlescoverdale/readaec) | Australian Electoral Commission |
+| [`comtrade`](https://github.com/charlescoverdale/comtrade) | UN Comtrade |
+| [`carbondata`](https://github.com/charlescoverdale/carbondata) | Carbon markets (EU ETS, UK ETS, voluntary registries) |
+
+**Analytical toolkits:**
+
+| Package | Purpose |
+|---|---|
+| [`inflateR`](https://github.com/charlescoverdale/inflateR) | Inflation adjustment for price series |
+| [`inflationkit`](https://github.com/charlescoverdale/inflationkit) | Inflation analysis (decomposition, persistence, Phillips curve) |
+| [`yieldcurves`](https://github.com/charlescoverdale/yieldcurves) | Yield curve fitting (Nelson-Siegel, Svensson) |
+| [`debtkit`](https://github.com/charlescoverdale/debtkit) | Debt sustainability analysis |
+| [`nowcast`](https://github.com/charlescoverdale/nowcast) | Economic nowcasting |
+| [`predictset`](https://github.com/charlescoverdale/predictset) | Conformal prediction |
+| [`climatekit`](https://github.com/charlescoverdale/climatekit) | Climate indices |
+| [`inequality`](https://github.com/charlescoverdale/inequality) | Inequality and poverty measurement |
 
 ---
 

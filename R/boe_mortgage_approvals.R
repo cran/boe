@@ -48,5 +48,11 @@ boe_mortgage_approvals <- function(from                 = "1993-04-01",
   )
 
   cli::cli_progress_done()
-  result
+  new_boe_tbl(result, query = list(
+    series_codes  = code,
+    from          = from,
+    to            = to,
+    frequency     = "monthly",
+    function_name = "boe_mortgage_approvals"
+  ))
 }

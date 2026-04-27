@@ -84,5 +84,11 @@ boe_yield_curve <- function(from     = "2000-01-01",
   rownames(result) <- NULL
 
   cli::cli_progress_done()
-  result
+  new_boe_tbl(result, query = list(
+    series_codes  = unname(codes),
+    from          = from,
+    to            = to,
+    frequency     = "daily",
+    function_name = "boe_yield_curve"
+  ))
 }

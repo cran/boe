@@ -65,5 +65,11 @@ boe_consumer_credit <- function(type  = c("total", "credit_card", "other"),
   rownames(result) <- NULL
 
   cli::cli_progress_done()
-  result
+  new_boe_tbl(result, query = list(
+    series_codes  = unname(codes),
+    from          = from,
+    to            = to,
+    frequency     = "monthly",
+    function_name = "boe_consumer_credit"
+  ))
 }

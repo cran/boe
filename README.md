@@ -18,7 +18,7 @@ This package is different. It is built specifically for the Bank of England and 
 
 Beyond the IADB wrappers, it also ships:
 
-- `boe_curve()`: the full Anderson-Sleath fitted yield curves (nominal, real, implied inflation, OIS) at all maturities, parsed from the BoE's published Excel archive.
+- `boe_curve()`: the full Anderson-Sleath fitted yield curves at all maturities, with five curve types (nominal, real, implied inflation, OIS, commercial bank liability), both standard and short-end segments (`segment = "short"` for monthly steps from one month to five years), and full historical archive coverage back to 1979 (nominal), 1985 (real), 2000 (BLC), or 2009 (OIS). `boe_curve_panel()` reshapes to a wide panel at chosen pillar maturities for time-series modelling.
 - `boe_search()` / `boe_browse()`: a built-in catalogue of wrapped series so you can find codes from R rather than the website.
 - A `boe_tbl` S3 class so every returned data frame carries provenance metadata (series codes, date range, frequency, fetch timestamp).
 
@@ -68,7 +68,8 @@ devtools::install_github("charlescoverdale/boe")
 | `boe_bank_rate()` | Official Bank Rate (daily or monthly) | 1975 | Present |
 | `boe_sonia()` | SONIA risk-free reference rate (daily, monthly, or annual) | 1997 | Present |
 | `boe_yield_curve()` | Nominal and real gilt yields at 5yr, 10yr, 20yr maturities | 1985 | Present |
-| `boe_curve()` | Full Anderson-Sleath fitted curves (nominal / real / inflation / OIS, spot or forward) at all maturities | Latest month | Present |
+| `boe_curve()` | Full Anderson-Sleath fitted curves (nominal / real / inflation / OIS / BLC; spot or forward; standard or short-end) at all maturities | 1979 | Present |
+| `boe_curve_panel()` | Wide panel of `boe_curve()` at chosen pillar maturities (segment-aware defaults: 0.5y to 20y standard, 0.5y to 5y short) | 1979 | Present |
 | `boe_exchange_rate()` | Daily sterling spot rates for 27 currencies | 1975 | Present |
 | `boe_mortgage_rates()` | Quoted mortgage rates (2yr/3yr/5yr fixed, SVR) | 1995 | Present |
 | `boe_mortgage_approvals()` | Monthly mortgage approvals for house purchase | 1993 | Present |
@@ -166,7 +167,7 @@ boe_yield_curve(from = "2024-01-01", type = "real", measure = "zero_coupon")
 
 ### The full Anderson-Sleath fitted curve
 
-For the complete yield curve at every published maturity (typically 0.5 years to 25 or 40 years, in 0.5-year steps), use `boe_curve()`. This parses the BoE's published Excel archive and covers four curves: nominal gilt, real (index-linked) gilt, implied inflation (breakeven), and overnight index swap (OIS).
+For the complete yield curve at every published maturity (typically 0.5 years to 25 or 40 years, in 0.5-year steps), use `boe_curve()`. This parses the BoE's published Excel archive and covers five curves: nominal gilt, real (index-linked) gilt, implied inflation (breakeven), overnight index swap (OIS), and the commercial bank liability curve (BLC). Each curve is published in two segments: the standard curve and a separately fitted short end (monthly steps from one month to five years), reached with `segment = "short"`.
 
 ```r
 # Latest nominal spot curve at all maturities
@@ -183,8 +184,12 @@ head(nc, 6)
 # Implied inflation curve (breakeven inflation)
 boe_curve(curve = "inflation", measure = "spot")
 
-# OIS forward curve
+# OIS spot curve
 boe_curve(curve = "ois", measure = "spot")
+
+# Short end of the OIS forward curve: the market-implied Bank Rate path
+# at monthly resolution, one month to five years
+boe_curve(curve = "ois", measure = "forward", segment = "short")
 ```
 
 Requires the `readxl` package (loaded lazily). Reference: Anderson and Sleath (2001), *New estimates of the UK real and nominal yield curves*, Bank of England Working Paper No. 126.
@@ -413,36 +418,17 @@ clear_cache()
 
 ## Related packages
 
-This package is part of a suite of R packages for economic, financial, and policy data. They share a consistent interface (named functions, tidy data frames, local caching) and are designed to work together.
-
-**Data access:**
-
-| Package | Source |
+| Package | Description |
 |---|---|
-| [`ons`](https://github.com/charlescoverdale/ons) | UK Office for National Statistics |
-| [`hmrc`](https://github.com/charlescoverdale/hmrc) | HM Revenue & Customs |
-| [`obr`](https://github.com/charlescoverdale/obr) | Office for Budget Responsibility |
-| [`ukhousing`](https://github.com/charlescoverdale/ukhousing) | UK Land Registry, EPC, Planning |
-| [`fred`](https://github.com/charlescoverdale/fred) | US Federal Reserve (FRED) |
-| [`readecb`](https://github.com/charlescoverdale/readecb) | European Central Bank |
-| [`readoecd`](https://github.com/charlescoverdale/readoecd) | OECD |
-| [`readnoaa`](https://github.com/charlescoverdale/readnoaa) | NOAA Climate Data |
-| [`readaec`](https://github.com/charlescoverdale/readaec) | Australian Electoral Commission |
-| [`comtrade`](https://github.com/charlescoverdale/comtrade) | UN Comtrade |
-| [`carbondata`](https://github.com/charlescoverdale/carbondata) | Carbon markets (EU ETS, UK ETS, voluntary registries) |
-
-**Analytical toolkits:**
-
-| Package | Purpose |
-|---|---|
-| [`inflateR`](https://github.com/charlescoverdale/inflateR) | Inflation adjustment for price series |
-| [`inflationkit`](https://github.com/charlescoverdale/inflationkit) | Inflation analysis (decomposition, persistence, Phillips curve) |
+| [`ons`](https://github.com/charlescoverdale/ons) | UK Office for National Statistics data |
+| [`hmrc`](https://github.com/charlescoverdale/hmrc) | HM Revenue & Customs tax data |
+| [`obr`](https://github.com/charlescoverdale/obr) | Office for Budget Responsibility fiscal forecasts |
+| [`fred`](https://github.com/charlescoverdale/fred) | US Federal Reserve (FRED) data |
+| [`readecb`](https://github.com/charlescoverdale/readecb) | European Central Bank data |
 | [`yieldcurves`](https://github.com/charlescoverdale/yieldcurves) | Yield curve fitting (Nelson-Siegel, Svensson) |
-| [`debtkit`](https://github.com/charlescoverdale/debtkit) | Debt sustainability analysis |
-| [`nowcast`](https://github.com/charlescoverdale/nowcast) | Economic nowcasting |
-| [`predictset`](https://github.com/charlescoverdale/predictset) | Conformal prediction |
-| [`climatekit`](https://github.com/charlescoverdale/climatekit) | Climate indices |
-| [`inequality`](https://github.com/charlescoverdale/inequality) | Inequality and poverty measurement |
+| [`mpshock`](https://github.com/charlescoverdale/mpshock) | Monetary policy shock series (US/UK/AU) |
+| [`inflationkit`](https://github.com/charlescoverdale/inflationkit) | Inflation analysis (decomposition, persistence, Phillips curve) |
+| [`nowcast`](https://github.com/charlescoverdale/nowcast) | Economic nowcasting (bridge, MIDAS, DFM) |
 
 ---
 

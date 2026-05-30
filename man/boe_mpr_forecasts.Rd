@@ -19,12 +19,17 @@ boe_mpr_forecasts(
 \code{"cpi_inflation"}, \code{"gdp_growth"}, \code{"gdp_level"},
 \code{"unemployment"}, \code{"bank_rate"}. Defaults to all five.}
 
-\item{month}{Character. \code{"february"}, \code{"may"}, \code{"august"}, or
-\code{"november"}. If \code{NULL}, the most recent quarterly release is
-used.}
+\item{month}{Character. Publication month of the report, e.g.
+\code{"february"} or \code{"may"}. The report is published roughly quarterly,
+but the exact month drifts between years (for example, the second
+2026 report appeared in April, not May), so any month name is
+accepted and its existence is verified against the Bank's website.
+Supply with \code{year}. If both are \code{NULL}, the most recent compatible
+release is selected automatically.}
 
-\item{year}{Integer. MPR year, 2019 or later. If \code{NULL}, the most
-recent quarterly release is used.}
+\item{year}{Integer. MPR year, 2019 or later. Supply with \code{month}.
+If both are \code{NULL}, the most recent compatible release is selected
+automatically.}
 
 \item{cache}{Logical. Use cached download if available (default
 \code{TRUE}). Older releases never change so the cache never expires;
@@ -60,11 +65,17 @@ Each row of a projection sheet is one MPR publication; columns are
 forecast quarters. The same publication therefore contributes
 multiple rows here, one per forecast horizon.
 }
-\section{Older releases}{
+\section{Release format and automatic fallback}{
 
-Pre-2025 MPRs are packaged differently and do not contain a single
-"Projections Databank" workbook. This function targets the post-2025
-format and may error on older releases.
+From the April 2026 report the Bank moved to a scenario-based
+"Scenario Projections Databank" with a transposed layout (following
+the Bernanke review of forecasting). That format is not parsed by
+this function yet. When automatic selection encounters such a
+release it skips it, falls back to the most recent compatible release
+(the classic "Projections Databank" workbook), and warns. Requesting
+a scenario-format release explicitly via \code{month}/\code{year} raises a
+clear error. Pre-2020 MPRs that predate the single "Projections
+Databank" workbook may also error.
 }
 
 \examples{

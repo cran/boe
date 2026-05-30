@@ -2,25 +2,48 @@
 % Please edit documentation in R/boe_curve.R
 \name{boe_curve}
 \alias{boe_curve}
-\title{Download the BoE Anderson-Sleath fitted yield curves}
+\title{Download BoE Anderson-Sleath fitted yield curves}
 \source{
 \url{https://www.bankofengland.co.uk/statistics/yield-curves}
 }
 \usage{
 boe_curve(
-  curve = c("nominal", "real", "inflation", "ois"),
+  curve = c("nominal", "real", "inflation", "ois", "blc"),
   measure = c("spot", "forward"),
-  cache = TRUE
+  segment = c("standard", "short"),
+  frequency = c("daily", "monthly"),
+  from = NULL,
+  to = NULL,
+  cache = TRUE,
+  cache_ttl_h = NULL
 )
 }
 \arguments{
 \item{curve}{Character. Which curve to fetch. One of \code{"nominal"},
-\code{"real"}, \code{"inflation"}, or \code{"ois"}. Defaults to \code{"nominal"}.}
+\code{"real"}, \code{"inflation"}, \code{"ois"}, or \code{"blc"}. Defaults to
+\code{"nominal"}. The commercial bank liability curve (\code{"blc"}) is only
+published in the historical archive zip, so requests for it always
+route through the archive path regardless of \code{from} / \code{to}.}
 
 \item{measure}{Character. \code{"spot"} (default) or \code{"forward"}.}
 
-\item{cache}{Logical. Use cached download if available and less
-than 24 hours old (default \code{TRUE}).}
+\item{segment}{Character. \code{"standard"} (default) for the full maturity
+spectrum in half-year steps, or \code{"short"} for the separately fitted
+short end in monthly steps (one month to five years).}
+
+\item{frequency}{Character. \code{"daily"} (default) or \code{"monthly"}. Monthly
+archives are end-of-month observations and are much smaller files.}
+
+\item{from, to}{Date or character ("YYYY-MM-DD"). Optional inclusive
+bounds. When either is set, the function uses the BoE archive zip
+(multi-decade history) and filters by date.}
+
+\item{cache}{Logical. Use cached download if available and within the
+TTL window (default \code{TRUE}).}
+
+\item{cache_ttl_h}{Numeric. Cache time-to-live in hours. When \code{NULL}
+(default) the TTL is 24 hours for the latest-month zip and 720 hours
+(30 days) for archive zips.}
 }
 \value{
 A \code{boe_tbl} data frame with columns:
@@ -31,30 +54,59 @@ A \code{boe_tbl} data frame with columns:
 }
 }
 \description{
-Downloads the Bank of England's published fitted yield curves at
-all maturities (typically 0.5 to 25 or 40 years) using the Anderson
-and Sleath (2001) smoothing methodology. Returns the latest month's
-daily data covering the four published curves: nominal gilt, real
-(index-linked) gilt, implied inflation, and overnight index swap
-(OIS).
+Downloads the Bank of England's published fitted yield curves at all
+maturities (typically 0.5 to 25 or 40 years) using the Anderson and
+Sleath (2001) smoothing methodology. Five curves are supported:
+nominal gilt, real (index-linked) gilt, implied inflation, overnight
+index swap (OIS), and the commercial bank liability curve (BLC).
 }
 \details{
-Coverage is limited to the latest published month. Historical archive
-loading is planned for a subsequent release.
+Each curve is published in two segments. The default
+\code{segment = "standard"} returns the full maturity spectrum in half-year
+steps (0.5 years out to 25 or 40). \code{segment = "short"} returns the
+short end of the curve in monthly steps (one month out to five years),
+which the Bank fits separately and which is the segment most relevant
+to near-term policy-rate and money-market analysis. The short end is
+available for every curve in the latest month, and historically wherever
+the BoE published it (e.g. OIS short-end data begins later than the OIS
+standard curve); periods without a short-end sheet are skipped.
 
-Requires the \pkg{readxl} package. The data is published as an
-Excel workbook inside a zip archive at
-\url{https://www.bankofengland.co.uk/statistics/yield-curves}.
+By default (\code{from = NULL}, \code{to = NULL}, \code{frequency = "daily"}) returns
+the latest published month of daily data, matching the behaviour of
+earlier releases of this package. Setting \code{from}, \code{to}, or \code{frequency}
+switches to the BoE's full archive, which goes back to 1979 for nominal
+gilts, 1985 for real, 2000 for BLC, and 2009 for OIS.
+
+Requires the \pkg{readxl} package. Data is published as Excel workbooks
+inside zip archives at
+\url{https://www.bankofengland.co.uk/statistics/yield-curves}. Each
+archive zip contains multiple per-period workbooks; this function
+concatenates them transparently.
 }
 \examples{
 \donttest{
 if (requireNamespace("readxl", quietly = TRUE)) {
   op <- options(boe.cache_dir = tempdir())
-  # Latest nominal spot curve at all maturities
+  # Latest nominal spot curve at all maturities (default behaviour)
   curve <- boe_curve(curve = "nominal", measure = "spot")
   head(curve)
+
+  # Short end of the nominal forward curve (monthly steps to 5 years)
+  se <- boe_curve(curve = "nominal", measure = "forward",
+                  segment = "short")
+  range(se$maturity_years)
   options(op)
 }
+}
+
+\dontrun{
+# Historical archive: multi-decade downloads, so not run automatically.
+# 10-year nominal spot back to 2010:
+long <- boe_curve(curve = "nominal", from = "2010-01-01")
+
+# End-of-month real curve since 1990:
+real_m <- boe_curve(curve = "real", frequency = "monthly",
+                    from = "1990-01-01")
 }
 
 }
@@ -66,6 +118,7 @@ and nominal yield curves. \emph{Bank of England Working Paper No.
 \seealso{
 Other interest rates: 
 \code{\link{boe_bank_rate}()},
+\code{\link{boe_curve_panel}()},
 \code{\link{boe_sonia}()},
 \code{\link{boe_yield_curve}()}
 }

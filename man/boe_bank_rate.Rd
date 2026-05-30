@@ -51,6 +51,7 @@ options(op)
 \seealso{
 Other interest rates: 
 \code{\link{boe_curve}()},
+\code{\link{boe_curve_panel}()},
 \code{\link{boe_sonia}()},
 \code{\link{boe_yield_curve}()}
 }

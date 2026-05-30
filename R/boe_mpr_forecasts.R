@@ -11,11 +11,16 @@
 #' @param series Character vector. One or more of:
 #'   `"cpi_inflation"`, `"gdp_growth"`, `"gdp_level"`,
 #'   `"unemployment"`, `"bank_rate"`. Defaults to all five.
-#' @param month Character. `"february"`, `"may"`, `"august"`, or
-#'   `"november"`. If `NULL`, the most recent quarterly release is
-#'   used.
-#' @param year Integer. MPR year, 2019 or later. If `NULL`, the most
-#'   recent quarterly release is used.
+#' @param month Character. Publication month of the report, e.g.
+#'   `"february"` or `"may"`. The report is published roughly quarterly,
+#'   but the exact month drifts between years (for example, the second
+#'   2026 report appeared in April, not May), so any month name is
+#'   accepted and its existence is verified against the Bank's website.
+#'   Supply with `year`. If both are `NULL`, the most recent compatible
+#'   release is selected automatically.
+#' @param year Integer. MPR year, 2019 or later. Supply with `month`.
+#'   If both are `NULL`, the most recent compatible release is selected
+#'   automatically.
 #' @param cache Logical. Use cached download if available (default
 #'   `TRUE`). Older releases never change so the cache never expires;
 #'   the latest release is refreshed if older than 24 hours.
@@ -42,10 +47,16 @@
 #'
 #' @source <https://www.bankofengland.co.uk/monetary-policy>
 #'
-#' @section Older releases:
-#' Pre-2025 MPRs are packaged differently and do not contain a single
-#' "Projections Databank" workbook. This function targets the post-2025
-#' format and may error on older releases.
+#' @section Release format and automatic fallback:
+#' From the April 2026 report the Bank moved to a scenario-based
+#' "Scenario Projections Databank" with a transposed layout (following
+#' the Bernanke review of forecasting). That format is not parsed by
+#' this function yet. When automatic selection encounters such a
+#' release it skips it, falls back to the most recent compatible release
+#' (the classic "Projections Databank" workbook), and warns. Requesting
+#' a scenario-format release explicitly via `month`/`year` raises a
+#' clear error. Pre-2020 MPRs that predate the single "Projections
+#' Databank" workbook may also error.
 #'
 #' @examples
 #' \donttest{
@@ -84,8 +95,23 @@ boe_mpr_forecasts <- function(series = c("cpi_inflation", "gdp_growth",
     series <- match.arg(series, choices = series_choices, several.ok = TRUE)
   }
 
-  release <- resolve_mpr_release(month = month, year = year)
-  zip_path <- download_mpr_zip(release$month, release$year, cache = cache)
+  if (is.null(month) && is.null(year)) {
+    picked   <- pick_mpr_release(cache = cache)
+    release  <- picked$release
+    zip_path <- picked$zip_path
+  } else {
+    release  <- resolve_mpr_release(month = month, year = year)
+    zip_path <- download_mpr_zip(release$month, release$year, cache = cache)
+    if (!mpr_zip_is_old_format(zip_path)) {
+      rel_label <- sprintf("%s %d", tools::toTitleCase(release$month),
+                           release$year)
+      cli::cli_abort(c(
+        "The {rel_label} MPR uses the Bank of England's new scenario-based format.",
+        "i" = "This format is not parsed by {.fn boe_mpr_forecasts} yet.",
+        "i" = "Request an earlier release (February 2026 or before), or omit {.arg month} and {.arg year} to auto-select the latest compatible release."
+      ))
+    }
+  }
   xls_path <- extract_projections_databank(zip_path)
 
   parts <- lapply(series, function(s) {
@@ -123,23 +149,23 @@ mpr_sheet_for <- function(series) {
 }
 
 
-#' Resolve the (month, year) of an MPR release
+#' Validate an explicitly requested (month, year) MPR release
 #'
-#' If both NULL, returns the most recent quarterly release that is
-#' likely already published. Buffer of 14 days inside the publication
-#' month ensures we don't try to fetch a release before it's posted.
+#' Used only when the caller supplies `month`/`year`. The publication
+#' schedule drifts between years, so any valid month name is accepted;
+#' whether that release actually exists is verified at download time.
 #' @noRd
 resolve_mpr_release <- function(month = NULL, year = NULL,
                                 today = Sys.Date()) {
   if (is.null(month) && is.null(year)) {
-    return(latest_mpr_release(today))
+    return(mpr_release_candidates(today)[[1L]])
   }
   if (is.null(month) || is.null(year)) {
     cli::cli_abort("Specify both {.arg month} and {.arg year}, or neither.")
   }
   month <- tolower(as.character(month))
-  if (!month %in% c("february", "may", "august", "november")) {
-    cli::cli_abort('{.arg month} must be one of "february", "may", "august", "november".')
+  if (!month %in% tolower(month.name)) {
+    cli::cli_abort('{.arg month} must be a month name, e.g. {.val february} or {.val may}.')
   }
   year <- as.integer(year)
   if (year < 2019L) {
@@ -149,40 +175,137 @@ resolve_mpr_release <- function(month = NULL, year = NULL,
 }
 
 
+#' Candidate MPR releases, most recent first
+#'
+#' The report is published roughly quarterly but the exact publication
+#' month drifts between years, so rather than assume a fixed Feb/May/
+#' Aug/Nov calendar we enumerate the last `n_months` months and let the
+#' caller probe which ones actually exist. Eight months spans more than
+#' two quarterly cycles, enough to find the latest release even when the
+#' two most recent ones are unpublished or in an unsupported format.
 #' @noRd
-latest_mpr_release <- function(today = Sys.Date()) {
-  yr  <- as.integer(format(today, "%Y"))
-  mo  <- as.integer(format(today, "%m"))
-  day <- as.integer(format(today, "%d"))
-
-  q_months <- c(11L, 8L, 5L, 2L)
-  q_names  <- c("november", "august", "may", "february")
-
-  for (i in seq_along(q_months)) {
-    q <- q_months[i]
-    if (mo > q || (mo == q && day >= 14L)) {
-      return(list(month = q_names[i], year = yr))
+mpr_release_candidates <- function(today = Sys.Date(), n_months = 8L) {
+  yr     <- as.integer(format(today, "%Y"))
+  mo     <- as.integer(format(today, "%m"))
+  months <- tolower(month.name)
+  lapply(seq_len(n_months) - 1L, function(k) {
+    m <- mo - k
+    y <- yr
+    while (m <= 0L) {
+      m <- m + 12L
+      y <- y - 1L
     }
-  }
-  list(month = "november", year = yr - 1L)
+    list(month = months[m], year = y)
+  })
 }
 
 
-#' Construct the BoE MPR zip URL for a given month/year
+#' Candidate zip URLs for a release, most likely first
+#'
+#' The data archive filename drifted from "chart-slides-and-data"
+#' (February 2025 and earlier) to "charts-slides-and-data" (May 2025
+#' onwards). Both variants are returned so the caller can probe each.
+#' @noRd
+mpr_zip_urls <- function(month, year) {
+  base <- sprintf(
+    "https://www.bankofengland.co.uk/-/media/boe/files/monetary-policy-report/%d/%s/mpr-%s-%d-",
+    year, month, month, year
+  )
+  variants <- c("charts-slides-and-data", "chart-slides-and-data")
+  if (year < 2025L) variants <- rev(variants)
+  paste0(base, variants, ".zip")
+}
+
+
+#' Primary (best-guess) zip URL for a release
 #' @noRd
 mpr_zip_url <- function(month, year) {
-  pattern <- if (year >= 2025L) "charts-slides-and-data" else "chart-slides-and-data"
-  sprintf(
-    "https://www.bankofengland.co.uk/-/media/boe/files/monetary-policy-report/%d/%s/mpr-%s-%d-%s.zip",
-    year, month, month, year, pattern
-  )
+  mpr_zip_urls(month, year)[[1L]]
+}
+
+
+#' Does a URL resolve (HTTP < 400)? Returns FALSE on any network error.
+#' @noRd
+url_exists_boe <- function(url) {
+  tryCatch({
+    resp <- httr2::request(url) |>
+      httr2::req_user_agent("boe R package (https://github.com/charlescoverdale/boe)") |>
+      httr2::req_method("HEAD") |>
+      httr2::req_timeout(30) |>
+      httr2::req_error(is_error = function(resp) FALSE) |>
+      httr2::req_perform()
+    httr2::resp_status(resp) < 400L
+  }, error = function(e) FALSE)
+}
+
+
+#' First existing zip URL for a release, or NULL if none resolve
+#' @noRd
+mpr_resolve_url <- function(month, year) {
+  for (u in mpr_zip_urls(month, year)) {
+    if (url_exists_boe(u)) return(u)
+  }
+  NULL
+}
+
+
+#' Select the most recent compatible (parseable) MPR release
+#'
+#' Walks back through candidate releases, newest first, probing each
+#' URL. The first release that both exists and uses the classic
+#' "Projections Databank" workbook is returned. Newer releases that use
+#' the unsupported scenario format are skipped with a warning. Errors
+#' only if no compatible release resolves in the lookback window.
+#' @noRd
+pick_mpr_release <- function(today = Sys.Date(), cache = TRUE,
+                             max_lookback = 8L) {
+  candidates <- mpr_release_candidates(today, n_months = max_lookback)
+  skipped    <- character(0)
+
+  for (rel in candidates) {
+    url <- mpr_resolve_url(rel$month, rel$year)
+    if (is.null(url)) next
+
+    zip_path <- download_mpr_zip(rel$month, rel$year, cache = cache, url = url)
+
+    if (mpr_zip_is_old_format(zip_path)) {
+      if (length(skipped) > 0L) {
+        rel_label <- sprintf("%s %d", tools::toTitleCase(rel$month), rel$year)
+        cli::cli_warn(c(
+          "!" = "Skipping newer MPR release(s) in the Bank of England's new scenario-based format, not parsed by {.fn boe_mpr_forecasts} yet: {.val {skipped}}.",
+          "i" = "Returning the most recent compatible release: {rel_label}."
+        ))
+      }
+      return(list(release = rel, zip_path = zip_path))
+    }
+    skipped <- c(skipped, sprintf("%s %d", tools::toTitleCase(rel$month),
+                                  rel$year))
+  }
+
+  cli::cli_abort(c(
+    "Could not find a compatible MPR release in the last {max_lookback} months.",
+    "i" = "Recent releases may use the Bank's new scenario-based format (not parsed by {.fn boe_mpr_forecasts} yet).",
+    "i" = "Check your network connection, or request a known release with {.arg month} and {.arg year}."
+  ))
 }
 
 
 #' Download the MPR zip with simple time-based caching
+#'
+#' `url` may be supplied pre-resolved (e.g. by [pick_mpr_release()]) to
+#' avoid a second existence probe; otherwise the existing filename
+#' variants are probed and the first that resolves is used.
 #' @noRd
-download_mpr_zip <- function(month, year, cache = TRUE) {
-  url        <- mpr_zip_url(month, year)
+download_mpr_zip <- function(month, year, cache = TRUE, url = NULL) {
+  if (is.null(url)) {
+    url <- mpr_resolve_url(month, year)
+    if (is.null(url)) {
+      cli::cli_abort(c(
+        "No MPR data archive found for {.val {month}} {.val {year}}.",
+        "i" = "Check the release exists and is published at {.url https://www.bankofengland.co.uk/monetary-policy}."
+      ))
+    }
+  }
   cache_dir  <- boe_cache_dir()
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
   cache_file <- file.path(cache_dir, sprintf("mpr-%s-%d.zip", month, year))
@@ -224,12 +347,32 @@ download_mpr_zip <- function(month, year, cache = TRUE) {
 }
 
 
+#' Does an MPR zip contain the classic (parseable) Projections Databank?
+#'
+#' The April 2026 redesign renamed the workbook to "Scenario Projections
+#' Databank" and changed its layout. We treat a release as compatible
+#' only when it ships a databank workbook whose name does not contain
+#' "Scenario".
+#' @noRd
+mpr_zip_is_old_format <- function(zip_path) {
+  files <- tryCatch(utils::unzip(zip_path, list = TRUE)$Name,
+                    error = function(e) character(0))
+  db <- files[grepl("Projections Databank", files, fixed = TRUE) &
+              grepl("\\.xlsx?$", files, ignore.case = TRUE)]
+  any(!grepl("Scenario", db, fixed = TRUE))
+}
+
+
 #' Extract the Projections Databank workbook from an MPR zip
 #' @noRd
 extract_projections_databank <- function(zip_path) {
   files <- utils::unzip(zip_path, list = TRUE)$Name
   hits  <- grep("Projections Databank", files, fixed = TRUE)
   hits  <- hits[grepl("\\.xlsx?$", files[hits], ignore.case = TRUE)]
+  # Prefer the classic workbook over the new "Scenario Projections
+  # Databank" when both are present.
+  classic <- hits[!grepl("Scenario", files[hits], fixed = TRUE)]
+  if (length(classic) > 0L) hits <- classic
 
   if (length(hits) == 0L) {
     cli::cli_abort(c(

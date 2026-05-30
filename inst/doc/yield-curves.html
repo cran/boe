@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Charles Coverdale" />
+
+<meta name="date" content="2026-05-30" />
+
+<title>Anderson-Sleath yield curves: latest and historical</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Anderson-Sleath yield curves: latest and
+historical</h1>
+<h4 class="author">Charles Coverdale</h4>
+<h4 class="date">30 May 2026</h4>
+
+
+
+<p>The Bank of England publishes daily fitted yield curves at all
+maturities using the Anderson and Sleath (2001) smoothing methodology.
+Five curves are produced: nominal gilt, real (index-linked) gilt,
+implied inflation, overnight index swap (OIS), and the commercial bank
+liability curve (BLC). Each is available in spot and
+instantaneous-forward form, and in two segments: the <em>standard</em>
+curve (half-year maturity steps out to 25 or 40 years) and the
+separately fitted <em>short end</em> (monthly steps from one month to
+five years), selected with <code>segment = &quot;short&quot;</code>.</p>
+<p>The default behaviour of <code>boe_curve()</code> returns the latest
+published month, matching what most analysts need when they reach for
+“today’s curve”. Pass <code>from</code>, <code>to</code>, or
+<code>frequency = &quot;monthly&quot;</code> and the function switches to the BoE
+historical archive, which extends back as far as 1979 for nominal
+gilts.</p>
+<div id="latest-published-month" class="section level2">
+<h2>Latest published month</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>latest <span class="ot">&lt;-</span> <span class="fu">boe_curve</span>(<span class="at">curve =</span> <span class="st">&quot;nominal&quot;</span>, <span class="at">measure =</span> <span class="st">&quot;spot&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">range</span>(latest<span class="sc">$</span>date)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">range</span>(latest<span class="sc">$</span>maturity_years)</span></code></pre></div>
+<p><code>boe_curve()</code> returns a long-format <code>boe_tbl</code>
+with one row per (date, maturity) pair. Provenance is attached as an
+attribute:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">attr</span>(latest, <span class="st">&quot;boe_query&quot;</span>)<span class="sc">$</span>source</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">attr</span>(latest, <span class="st">&quot;boe_query&quot;</span>)<span class="sc">$</span>series_codes</span></code></pre></div>
+</div>
+<div id="historical-10-year-nominal-spot-rate-since-2000" class="section level2">
+<h2>Historical: 10-year nominal spot rate since 2000</h2>
+<p>For time-series work, <code>boe_curve_panel()</code> reshapes the
+long format into a wide panel with one column per pillar maturity.
+End-of-month frequency is plenty for multi-decade work and keeps the
+download small.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>panel <span class="ot">&lt;-</span> <span class="fu">boe_curve_panel</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="at">curve     =</span> <span class="st">&quot;nominal&quot;</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">measure   =</span> <span class="st">&quot;spot&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">frequency =</span> <span class="st">&quot;monthly&quot;</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">from      =</span> <span class="st">&quot;2000-01-01&quot;</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">maturities =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>)</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="fu">head</span>(panel)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(panel, ggplot2<span class="sc">::</span><span class="fu">aes</span>(date, m10)) <span class="sc">+</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">geom_line</span>(<span class="at">colour =</span> <span class="st">&quot;#1f77b4&quot;</span>) <span class="sc">+</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>      <span class="at">title    =</span> <span class="st">&quot;UK 10-year nominal spot rate&quot;</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>      <span class="at">subtitle =</span> <span class="st">&quot;End of month, Anderson-Sleath fitted&quot;</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>      <span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">&quot;Per cent&quot;</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>()</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="y5y-forward-implied-inflation" class="section level2">
+<h2>5y5y forward implied inflation</h2>
+<p>The 5y5y forward inflation rate (the average implied inflation rate
+over the second five-year horizon, five years from now) is a textbook
+medium-term inflation expectations measure. It comes straight off the
+implied-inflation forward curve.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>inflation_fwd <span class="ot">&lt;-</span> <span class="fu">boe_curve_panel</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">curve     =</span> <span class="st">&quot;inflation&quot;</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">measure   =</span> <span class="st">&quot;forward&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">frequency =</span> <span class="st">&quot;monthly&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">from      =</span> <span class="st">&quot;2010-01-01&quot;</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">maturities =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>inflation_fwd<span class="sc">$</span>five_y_five_y <span class="ot">&lt;-</span> (inflation_fwd<span class="sc">$</span>m10 <span class="sc">*</span> <span class="dv">10</span> <span class="sc">-</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>                                inflation_fwd<span class="sc">$</span>m5  <span class="sc">*</span>  <span class="dv">5</span>) <span class="sc">/</span> <span class="dv">5</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="fu">head</span>(inflation_fwd[, <span class="fu">c</span>(<span class="st">&quot;date&quot;</span>, <span class="st">&quot;m5&quot;</span>, <span class="st">&quot;m10&quot;</span>, <span class="st">&quot;five_y_five_y&quot;</span>)])</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(inflation_fwd, ggplot2<span class="sc">::</span><span class="fu">aes</span>(date, five_y_five_y)) <span class="sc">+</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">geom_line</span>(<span class="at">colour =</span> <span class="st">&quot;#d62728&quot;</span>) <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">2.0</span>, <span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>                        <span class="at">colour =</span> <span class="st">&quot;grey40&quot;</span>) <span class="sc">+</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">annotate</span>(<span class="st">&quot;text&quot;</span>, <span class="at">x =</span> <span class="fu">max</span>(inflation_fwd<span class="sc">$</span>date),</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>                      <span class="at">y =</span> <span class="fl">2.0</span>, <span class="at">label =</span> <span class="st">&quot;2% target&quot;</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>                      <span class="at">colour =</span> <span class="st">&quot;grey40&quot;</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>      <span class="at">title    =</span> <span class="st">&quot;UK 5y5y forward implied inflation&quot;</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>      <span class="at">subtitle =</span> <span class="st">&quot;End of month, derived from the BoE implied-inflation forward curve&quot;</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>      <span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">&quot;Per cent per annum&quot;</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>()</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="ois-curve-evolution-across-the-rate-cycle" class="section level2">
+<h2>OIS curve evolution across the rate cycle</h2>
+<p>The OIS curve gives a market-implied path for Bank Rate. Comparing
+OIS spot pillars at MPC decision dates shows how expectations shifted
+through the 2022 to 2024 hiking cycle.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>ois <span class="ot">&lt;-</span> <span class="fu">boe_curve_panel</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">curve     =</span> <span class="st">&quot;ois&quot;</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">measure   =</span> <span class="st">&quot;spot&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">frequency =</span> <span class="st">&quot;monthly&quot;</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">from      =</span> <span class="st">&quot;2020-01-01&quot;</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">maturities =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">5</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>)</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>mpc <span class="ot">&lt;-</span> <span class="fu">boe_mpc_decisions</span>(<span class="at">from =</span> <span class="st">&quot;2020-01-01&quot;</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>mpc <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">date =</span> mpc<span class="sc">$</span>date, <span class="at">bank_rate =</span> mpc<span class="sc">$</span>new_rate_pct)</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>merged <span class="ot">&lt;-</span> <span class="fu">merge</span>(ois, mpc, <span class="at">by =</span> <span class="st">&quot;date&quot;</span>, <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>merged<span class="sc">$</span>bank_rate <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(merged<span class="sc">$</span>bank_rate)</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co"># carry the bank rate forward between MPC dates</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(merged<span class="sc">$</span>bank_rate)) {</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  <span class="cf">if</span> (i <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">&amp;&amp;</span> <span class="fu">is.na</span>(merged<span class="sc">$</span>bank_rate[i])) {</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>    merged<span class="sc">$</span>bank_rate[i] <span class="ot">&lt;-</span> merged<span class="sc">$</span>bank_rate[i <span class="sc">-</span> <span class="dv">1</span>]</span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>  }</span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>}</span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="fu">tail</span>(merged)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  long <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>    <span class="at">date  =</span> <span class="fu">rep</span>(merged<span class="sc">$</span>date, <span class="dv">5</span>),</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>    <span class="at">pillar =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;Bank Rate&quot;</span>, <span class="st">&quot;6m OIS&quot;</span>, <span class="st">&quot;1y OIS&quot;</span>, <span class="st">&quot;2y OIS&quot;</span>, <span class="st">&quot;5y OIS&quot;</span>),</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>                 <span class="at">each =</span> <span class="fu">nrow</span>(merged)),</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>    <span class="at">rate  =</span> <span class="fu">c</span>(merged<span class="sc">$</span>bank_rate, merged<span class="sc">$</span>m0<span class="fl">.5</span>, merged<span class="sc">$</span>m1, merged<span class="sc">$</span>m2, merged<span class="sc">$</span>m5)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  )</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  long<span class="sc">$</span>pillar <span class="ot">&lt;-</span> <span class="fu">factor</span>(long<span class="sc">$</span>pillar,</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>                        <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;Bank Rate&quot;</span>, <span class="st">&quot;6m OIS&quot;</span>, <span class="st">&quot;1y OIS&quot;</span>,</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>                                   <span class="st">&quot;2y OIS&quot;</span>, <span class="st">&quot;5y OIS&quot;</span>))</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(long, ggplot2<span class="sc">::</span><span class="fu">aes</span>(date, rate, <span class="at">colour =</span> pillar)) <span class="sc">+</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>      <span class="at">title    =</span> <span class="st">&quot;UK OIS spot pillars and Bank Rate, 2020 to present&quot;</span>,</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>      <span class="at">subtitle =</span> <span class="st">&quot;Tightening cycle visible across all pillars&quot;</span>,</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>      <span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">&quot;Per cent&quot;</span>, <span class="at">colour =</span> <span class="cn">NULL</span></span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="the-short-end-of-the-curve" class="section level2">
+<h2>The short end of the curve</h2>
+<p>The standard curves step in half-years from 0.5 years out. For
+near-term policy and money-market work the Bank fits a separate
+<em>short end</em> at monthly maturities, from one month to five years.
+Pass <code>segment = &quot;short&quot;</code> to <code>boe_curve()</code> or
+<code>boe_curve_panel()</code> to reach it.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>short <span class="ot">&lt;-</span> <span class="fu">boe_curve</span>(<span class="at">curve =</span> <span class="st">&quot;nominal&quot;</span>, <span class="at">measure =</span> <span class="st">&quot;spot&quot;</span>, <span class="at">segment =</span> <span class="st">&quot;short&quot;</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">range</span>(short<span class="sc">$</span>maturity_years)   <span class="co"># monthly grid, ~1/12 to 5 years</span></span></code></pre></div>
+<p>The short end of the OIS <em>forward</em> curve is the cleanest
+market-implied path for Bank Rate: the instantaneous forward rate at
+each horizon, at monthly resolution. Here it is on the most recent
+published date.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>ois_short  <span class="ot">&lt;-</span> <span class="fu">boe_curve</span>(<span class="at">curve =</span> <span class="st">&quot;ois&quot;</span>, <span class="at">measure =</span> <span class="st">&quot;forward&quot;</span>, <span class="at">segment =</span> <span class="st">&quot;short&quot;</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>latest_day <span class="ot">&lt;-</span> ois_short[ois_short<span class="sc">$</span>date <span class="sc">==</span> <span class="fu">max</span>(ois_short<span class="sc">$</span>date), ]</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="fu">head</span>(latest_day)</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(latest_day, ggplot2<span class="sc">::</span><span class="fu">aes</span>(maturity_years, rate_pct)) <span class="sc">+</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">geom_line</span>(<span class="at">colour =</span> <span class="st">&quot;#1f77b4&quot;</span>) <span class="sc">+</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">0.8</span>, <span class="at">colour =</span> <span class="st">&quot;#1f77b4&quot;</span>) <span class="sc">+</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>      <span class="at">title    =</span> <span class="st">&quot;UK OIS instantaneous forward curve, short end&quot;</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>      <span class="at">subtitle =</span> <span class="fu">paste</span>(<span class="st">&quot;Market-implied Bank Rate path on&quot;</span>,</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>                       <span class="fu">format</span>(<span class="fu">max</span>(ois_short<span class="sc">$</span>date), <span class="st">&quot;%d %B %Y&quot;</span>)),</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>      <span class="at">x =</span> <span class="st">&quot;Horizon (years)&quot;</span>, <span class="at">y =</span> <span class="st">&quot;Per cent&quot;</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>()</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>}</span></code></pre></div>
+<p>Short-end history goes back as far as the Bank published it: to 1979
+for nominal gilts, and from 2016 for OIS. Where a period has no
+short-end sheet (early OIS, for instance), those dates are simply absent
+from the result rather than causing an error.</p>
+</div>
+<div id="when-to-reach-for-the-archive" class="section level2">
+<h2>When to reach for the archive</h2>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Question</th>
+<th>Argument set</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Today’s curve</td>
+<td>none (default)</td>
+</tr>
+<tr class="even">
+<td>Last few years, daily</td>
+<td><code>from = &quot;2020-01-01&quot;</code></td>
+</tr>
+<tr class="odd">
+<td>Multi-decade panel for econometrics</td>
+<td><code>frequency = &quot;monthly&quot;, from = &quot;1990-01-01&quot;</code></td>
+</tr>
+<tr class="even">
+<td>Near-term policy-rate path, monthly detail</td>
+<td><code>segment = &quot;short&quot;</code></td>
+</tr>
+<tr class="odd">
+<td>Commercial bank liability curve</td>
+<td><code>curve = &quot;blc&quot;</code> (always uses archive)</td>
+</tr>
+</tbody>
+</table>
+<p>Archive zips cache for 30 days by default; the latest-month zip
+caches for 24 hours. Override with <code>cache_ttl_h</code> if you need
+to force a fresh pull.</p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Anderson, N. and Sleath, J. (2001). <em>New estimates of the UK real
+and nominal yield curves.</em> Bank of England Working Paper No. 126. <a href="https://www.bankofengland.co.uk/working-paper/2001/new-estimates-of-the-uk-real-and-nominal-yield-curves">https://www.bankofengland.co.uk/working-paper/2001/new-estimates-of-the-uk-real-and-nominal-yield-curves</a></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

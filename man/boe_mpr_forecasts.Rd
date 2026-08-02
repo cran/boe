@@ -15,9 +15,17 @@ boe_mpr_forecasts(
 )
 }
 \arguments{
-\item{series}{Character vector. One or more of:
-\code{"cpi_inflation"}, \code{"gdp_growth"}, \code{"gdp_level"},
-\code{"unemployment"}, \code{"bank_rate"}. Defaults to all five.}
+\item{series}{Character vector of series to return. The five
+traditional series are the default: \code{"cpi_inflation"},
+\code{"gdp_growth"}, \code{"gdp_level"}, \code{"unemployment"}, and \code{"bank_rate"}.
+From the April 2026 report the Bank also publishes scenario paths
+for \code{"output_gap"}, \code{"energy_prices"}, \code{"average_earnings"}, and
+\code{"world_export_prices"}, which can be requested explicitly. Series
+not published in a given release are skipped with a warning: the
+scenario-only series are absent from classic releases (February
+2026 and earlier), and the April 2026 scenario-format release drops
+\code{"gdp_level"} and \code{"bank_rate"}. Hybrid releases (July 2026 onward)
+publish all nine.}
 
 \item{month}{Character. Publication month of the report, e.g.
 \code{"february"} or \code{"may"}. The report is published roughly quarterly,
@@ -38,11 +46,13 @@ the latest release is refreshed if older than 24 hours.}
 \value{
 A \code{boe_tbl} data frame with columns:
 \describe{
-\item{date}{Date. Publication date of the MPR (start of quarter
-the report covers).}
-\item{horizon}{Character. Forecast horizon label (e.g. \code{"2026 Q1"}).}
-\item{horizon_date}{Date. Start of the forecast quarter.}
+\item{date}{Date. Publication date of the MPR release.}
+\item{horizon}{Character. Quarter label (e.g. \code{"2026 Q1"}).}
+\item{horizon_date}{Date. Start of the quarter.}
 \item{series}{Character. Series identifier (e.g. \code{"cpi_inflation"}).}
+\item{scenario}{Character. Scenario or vintage label in the
+scenario-based format (e.g. \code{"April 2026 Scenario A"}); \code{NA} in
+the classic format, which carries a single central projection.}
 \item{value}{Numeric. Forecast value (percent for rates and
 growth; index for \code{gdp_level}).}
 }
@@ -58,24 +68,35 @@ Coverage runs quarterly from November 2019 (when the report was
 renamed from Inflation Report) to the latest published release.
 
 Requires the \pkg{readxl} package. The MPR is published as a zip
-archive containing a Projections Databank workbook plus chart data
-and slides; this function only reads the projection sheets.
+archive containing a projections databank workbook plus chart data
+and slides; this function reads only the projection sheets.
 
-Each row of a projection sheet is one MPR publication; columns are
-forecast quarters. The same publication therefore contributes
-multiple rows here, one per forecast horizon.
+In the classic format (up to February 2026) each row of a projection
+sheet is one MPR publication and the columns are forecast quarters,
+so the function returns one row per publication and horizon with a
+single central projection (\code{scenario} is \code{NA}). In the scenario-based
+format (April 2026) each sheet holds one series with the quarters
+down the rows and one column per scenario, so the function returns
+the full quarterly path (history and projection) for every scenario,
+tagged in the \code{scenario} column. Hybrid releases (July 2026 onward)
+carry both: central projections for all publications (\code{scenario} is
+\code{NA}) plus the current report's scenario paths (labelled, e.g.
+\code{"Adverse Scenario"}), in one output.
 }
-\section{Release format and automatic fallback}{
+\section{Release format}{
 
-From the April 2026 report the Bank moved to a scenario-based
-"Scenario Projections Databank" with a transposed layout (following
-the Bernanke review of forecasting). That format is not parsed by
-this function yet. When automatic selection encounters such a
-release it skips it, falls back to the most recent compatible release
-(the classic "Projections Databank" workbook), and warns. Requesting
-a scenario-format release explicitly via \code{month}/\code{year} raises a
-clear error. Pre-2020 MPRs that predate the single "Projections
-Databank" workbook may also error.
+Following the Bernanke review of forecasting, the Bank replaced the
+single central projection of the classic "Projections Databank" with
+a scenario-based "Scenario Projections Databank" in the April 2026
+report, then merged the two from the July 2026 report into one
+hybrid workbook holding both the classic central-projection sheets
+(GDP level and Bank Rate restored) and a "Quarterly scenarios"
+section. All three layouts are parsed and share the same output
+columns; the format is detected automatically from the release. The
+April 2026 release alone lacks a GDP level and Bank Rate sheet (Bank
+Rate was published as a conditioning assumption), so those two
+series are skipped with a warning for that release. Pre-2020 MPRs
+that predate the single databank workbook may error.
 }
 
 \examples{
@@ -83,7 +104,8 @@ Databank" workbook may also error.
 if (requireNamespace("readxl", quietly = TRUE)) {
   op <- options(boe.cache_dir = tempdir())
 
-  # Latest CPI inflation projections
+  # Latest CPI inflation projections. In the scenario-based format
+  # this returns one path per scenario (see the `scenario` column).
   cpi <- boe_mpr_forecasts(series = "cpi_inflation")
   head(cpi)
 

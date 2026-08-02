@@ -102,15 +102,28 @@ boe_cache_dir <- function() {
 }
 
 #' Download a URL with local caching
+#'
+#' Cached responses expire after `boe.cache_ttl_h` hours (default 720,
+#' i.e. 30 days) so that BoE revisions eventually reach queries pinned
+#' to a fixed date range. Queries whose `to` date is today produce a new
+#' URL (and so a fresh download) each day regardless of the TTL. Set
+#' `options(boe.cache_ttl_h = Inf)` to keep cached files indefinitely,
+#' e.g. to freeze inputs for a reproducible run.
 #' @noRd
 download_cached_boe <- function(url, cache = TRUE) {
   cache_dir  <- boe_cache_dir()
   ext        <- ".csv"
   cache_file <- file.path(cache_dir, paste0(digest_url_boe(url), ext))
+  ttl_h      <- getOption("boe.cache_ttl_h", default = 720)
 
   if (cache && file.exists(cache_file)) {
-    cli::cli_progress_step("Using cached data")
-    return(cache_file)
+    age_h <- as.numeric(difftime(Sys.time(),
+                                 file.info(cache_file)$mtime,
+                                 units = "hours"))
+    if (age_h < ttl_h) {
+      cli::cli_progress_step("Using cached data")
+      return(cache_file)
+    }
   }
 
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)

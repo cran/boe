@@ -8,9 +8,17 @@
 #' Coverage runs quarterly from November 2019 (when the report was
 #' renamed from Inflation Report) to the latest published release.
 #'
-#' @param series Character vector. One or more of:
-#'   `"cpi_inflation"`, `"gdp_growth"`, `"gdp_level"`,
-#'   `"unemployment"`, `"bank_rate"`. Defaults to all five.
+#' @param series Character vector of series to return. The five
+#'   traditional series are the default: `"cpi_inflation"`,
+#'   `"gdp_growth"`, `"gdp_level"`, `"unemployment"`, and `"bank_rate"`.
+#'   From the April 2026 report the Bank also publishes scenario paths
+#'   for `"output_gap"`, `"energy_prices"`, `"average_earnings"`, and
+#'   `"world_export_prices"`, which can be requested explicitly. Series
+#'   not published in a given release are skipped with a warning: the
+#'   scenario-only series are absent from classic releases (February
+#'   2026 and earlier), and the April 2026 scenario-format release drops
+#'   `"gdp_level"` and `"bank_rate"`. Hybrid releases (July 2026 onward)
+#'   publish all nine.
 #' @param month Character. Publication month of the report, e.g.
 #'   `"february"` or `"may"`. The report is published roughly quarterly,
 #'   but the exact month drifts between years (for example, the second
@@ -27,43 +35,57 @@
 #'
 #' @return A `boe_tbl` data frame with columns:
 #'   \describe{
-#'     \item{date}{Date. Publication date of the MPR (start of quarter
-#'       the report covers).}
-#'     \item{horizon}{Character. Forecast horizon label (e.g. `"2026 Q1"`).}
-#'     \item{horizon_date}{Date. Start of the forecast quarter.}
+#'     \item{date}{Date. Publication date of the MPR release.}
+#'     \item{horizon}{Character. Quarter label (e.g. `"2026 Q1"`).}
+#'     \item{horizon_date}{Date. Start of the quarter.}
 #'     \item{series}{Character. Series identifier (e.g. `"cpi_inflation"`).}
+#'     \item{scenario}{Character. Scenario or vintage label in the
+#'       scenario-based format (e.g. `"April 2026 Scenario A"`); `NA` in
+#'       the classic format, which carries a single central projection.}
 #'     \item{value}{Numeric. Forecast value (percent for rates and
 #'       growth; index for `gdp_level`).}
 #'   }
 #'
 #' @details
 #' Requires the \pkg{readxl} package. The MPR is published as a zip
-#' archive containing a Projections Databank workbook plus chart data
-#' and slides; this function only reads the projection sheets.
+#' archive containing a projections databank workbook plus chart data
+#' and slides; this function reads only the projection sheets.
 #'
-#' Each row of a projection sheet is one MPR publication; columns are
-#' forecast quarters. The same publication therefore contributes
-#' multiple rows here, one per forecast horizon.
+#' In the classic format (up to February 2026) each row of a projection
+#' sheet is one MPR publication and the columns are forecast quarters,
+#' so the function returns one row per publication and horizon with a
+#' single central projection (`scenario` is `NA`). In the scenario-based
+#' format (April 2026) each sheet holds one series with the quarters
+#' down the rows and one column per scenario, so the function returns
+#' the full quarterly path (history and projection) for every scenario,
+#' tagged in the `scenario` column. Hybrid releases (July 2026 onward)
+#' carry both: central projections for all publications (`scenario` is
+#' `NA`) plus the current report's scenario paths (labelled, e.g.
+#' `"Adverse Scenario"`), in one output.
 #'
 #' @source <https://www.bankofengland.co.uk/monetary-policy>
 #'
-#' @section Release format and automatic fallback:
-#' From the April 2026 report the Bank moved to a scenario-based
-#' "Scenario Projections Databank" with a transposed layout (following
-#' the Bernanke review of forecasting). That format is not parsed by
-#' this function yet. When automatic selection encounters such a
-#' release it skips it, falls back to the most recent compatible release
-#' (the classic "Projections Databank" workbook), and warns. Requesting
-#' a scenario-format release explicitly via `month`/`year` raises a
-#' clear error. Pre-2020 MPRs that predate the single "Projections
-#' Databank" workbook may also error.
+#' @section Release format:
+#' Following the Bernanke review of forecasting, the Bank replaced the
+#' single central projection of the classic "Projections Databank" with
+#' a scenario-based "Scenario Projections Databank" in the April 2026
+#' report, then merged the two from the July 2026 report into one
+#' hybrid workbook holding both the classic central-projection sheets
+#' (GDP level and Bank Rate restored) and a "Quarterly scenarios"
+#' section. All three layouts are parsed and share the same output
+#' columns; the format is detected automatically from the release. The
+#' April 2026 release alone lacks a GDP level and Bank Rate sheet (Bank
+#' Rate was published as a conditioning assumption), so those two
+#' series are skipped with a warning for that release. Pre-2020 MPRs
+#' that predate the single databank workbook may error.
 #'
 #' @examples
 #' \donttest{
 #' if (requireNamespace("readxl", quietly = TRUE)) {
 #'   op <- options(boe.cache_dir = tempdir())
 #'
-#'   # Latest CPI inflation projections
+#'   # Latest CPI inflation projections. In the scenario-based format
+#'   # this returns one path per scenario (see the `scenario` column).
 #'   cpi <- boe_mpr_forecasts(series = "cpi_inflation")
 #'   head(cpi)
 #'
@@ -88,9 +110,11 @@ boe_mpr_forecasts <- function(series = c("cpi_inflation", "gdp_growth",
     ))
   }
 
-  series_choices <- eval(formals()$series)
+  series_default <- eval(formals()$series)
+  series_choices <- c(series_default, "output_gap", "energy_prices",
+                      "average_earnings", "world_export_prices")
   if (missing(series)) {
-    series <- series_choices
+    series <- series_default
   } else {
     series <- match.arg(series, choices = series_choices, several.ok = TRUE)
   }
@@ -102,30 +126,45 @@ boe_mpr_forecasts <- function(series = c("cpi_inflation", "gdp_growth",
   } else {
     release  <- resolve_mpr_release(month = month, year = year)
     zip_path <- download_mpr_zip(release$month, release$year, cache = cache)
-    if (!mpr_zip_is_old_format(zip_path)) {
-      rel_label <- sprintf("%s %d", tools::toTitleCase(release$month),
-                           release$year)
-      cli::cli_abort(c(
-        "The {rel_label} MPR uses the Bank of England's new scenario-based format.",
-        "i" = "This format is not parsed by {.fn boe_mpr_forecasts} yet.",
-        "i" = "Request an earlier release (February 2026 or before), or omit {.arg month} and {.arg year} to auto-select the latest compatible release."
-      ))
-    }
   }
-  xls_path <- extract_projections_databank(zip_path)
 
-  parts <- lapply(series, function(s) {
-    parse_projection_sheet(xls_path,
-                           sheet_name  = mpr_sheet_for(s),
-                           series_name = s)
-  })
+  xls_path  <- extract_projections_databank(zip_path)
+  fmt       <- mpr_databank_format(xls_path)
+  rel_label <- sprintf("%s %d", tools::toTitleCase(release$month), release$year)
+
+  parts   <- list()
+  skipped <- character(0)
+  for (s in series) {
+    df <- mpr_parse_series(xls_path, s, fmt = fmt, release = release)
+    if (is.null(df)) skipped <- c(skipped, s) else parts[[s]] <- df
+  }
+
+  if (length(skipped) > 0L) {
+    hint <- switch(fmt,
+      classic  = "These series are published from the April 2026 report onward.",
+      scenario = "The scenario-based format (April 2026) drops the GDP level and Bank Rate sheets (Bank Rate is now a conditioning assumption).",
+      hybrid   = "The requested sheets were not found in this release's databank workbook."
+    )
+    cli::cli_warn(c(
+      "!" = "Series {.val {skipped}} not published in the {rel_label} MPR; skipping.",
+      "i" = hint
+    ))
+  }
+  if (length(parts) == 0L) {
+    cli::cli_abort(c(
+      "None of the requested series are available in the {rel_label} MPR.",
+      "i" = "See {.help boe_mpr_forecasts} for which series each report format publishes."
+    ))
+  }
+
   out <- do.call(rbind, parts)
-  out <- out[order(out$date, out$horizon_date, out$series), , drop = FALSE]
+  out <- out[order(out$date, out$horizon_date, out$series, out$scenario), ,
+             drop = FALSE]
   rownames(out) <- NULL
 
   cli::cli_progress_done()
   new_boe_tbl(out, query = list(
-    series_codes  = paste0("MPR_", toupper(series)),
+    series_codes  = paste0("MPR_", toupper(names(parts))),
     from          = min(out$date),
     to            = max(out$date),
     frequency     = "quarterly",
@@ -135,17 +174,135 @@ boe_mpr_forecasts <- function(series = c("cpi_inflation", "gdp_growth",
 }
 
 
-#' Map a friendly series name to the Projections Databank sheet name
+#' Sheet name for a series in the classic Projections Databank
+#'
+#' Returns `NA` for series that the classic format does not publish (the
+#' scenario-only series). Sheet numbers drift between releases, so the
+#' downstream parser matches on the descriptive name, not the number.
 #' @noRd
-mpr_sheet_for <- function(series) {
+mpr_sheet_old <- function(series) {
   switch(series,
     cpi_inflation = "1. CPI inflation",
     gdp_growth    = "2. GDP growth",
     gdp_level     = "3. GDP level",
     unemployment  = "4. Unemployment",
     bank_rate     = "38. Bank Rate",
-    cli::cli_abort("Unknown MPR series {.val {series}}.")
+    NA_character_
   )
+}
+
+
+#' Sheet name for a series in the scenario-based Projections Databank
+#'
+#' Returns `NA` for series the scenario format does not publish (GDP
+#' level and Bank Rate; Bank Rate is now a conditioning assumption).
+#' Each series has a quarterly sheet (used here) and an annual duplicate;
+#' the parser prefers the quarterly one.
+#' @noRd
+mpr_sheet_scenario <- function(series) {
+  switch(series,
+    cpi_inflation       = "2. CPI inflation",
+    gdp_growth          = "3. GDP growth",
+    unemployment        = "4. Unemployment",
+    output_gap          = "5. Output gap",
+    energy_prices       = "6. Energy prices",
+    average_earnings    = "7. Average weekly earnings",
+    world_export_prices = "8. World export prices",
+    NA_character_
+  )
+}
+
+
+#' Which layout does a Projections Databank workbook use?
+#'
+#' Three formats exist:
+#' * `"classic"`: up to February 2026. One sheet per series, MPR
+#'   publications down the rows, forecast quarters across the columns.
+#' * `"scenario"`: April 2026 only. The workbook is named "Scenario
+#'   Projections Databank"; each sheet holds one series transposed, with
+#'   one column per scenario. GDP level and Bank Rate are dropped.
+#' * `"hybrid"`: July 2026 onward. A single workbook restores the
+#'   classic central-projection sheets (including GDP level and Bank
+#'   Rate) and adds a "Quarterly scenarios" section of transposed
+#'   scenario sheets.
+#' @noRd
+mpr_databank_format <- function(xls_path) {
+  if (grepl("Scenario", basename(xls_path), fixed = TRUE)) {
+    return("scenario")
+  }
+  sheets <- readxl::excel_sheets(xls_path)
+  if (any(grepl("Quarterly scenarios", sheets, ignore.case = TRUE))) {
+    return("hybrid")
+  }
+  "classic"
+}
+
+
+#' Sheets in the "Quarterly scenarios" section of a hybrid workbook
+#'
+#' Hybrid workbooks group sheets with divider tabs ending in "==>". The
+#' scenario sheets sit between the "Quarterly scenarios ==>" divider and
+#' the next divider. Restricting scenario lookups to this pool matters
+#' because the classic section carries same-named sheets (e.g. "22.
+#' Output gap" central projection vs "47. Output gap" scenarios).
+#' @noRd
+hybrid_scenario_pool <- function(sheets) {
+  start <- grep("Quarterly scenarios", sheets, ignore.case = TRUE)
+  if (length(start) == 0L) return(character(0))
+  rest    <- sheets[-seq_len(start[[1L]])]
+  divider <- grep("==>$", trimws(rest))
+  if (length(divider) > 0L) rest <- rest[seq_len(divider[[1L]] - 1L)]
+  rest
+}
+
+
+#' Parse one series from whichever databank format the release uses
+#'
+#' Returns `NULL` (the caller skips and warns) when the series is not
+#' published in the given release's format. In the hybrid format a
+#' series can appear both as a classic central-projection sheet and as
+#' a quarterly scenario sheet; both are parsed and combined, with the
+#' scenario column distinguishing the rows.
+#' @noRd
+mpr_parse_series <- function(path, series, fmt, release) {
+  if (fmt == "classic") {
+    sheet <- mpr_sheet_old(series)
+    if (is.na(sheet)) return(NULL)
+    return(parse_projection_sheet(path, sheet, series))
+  }
+
+  if (fmt == "scenario") {
+    sheet <- mpr_sheet_scenario(series)
+    if (is.na(sheet)) return(NULL)
+    return(parse_scenario_sheet(path, sheet, series, release))
+  }
+
+  # Hybrid: classic central projections plus any quarterly scenario sheet.
+  parts <- list()
+
+  classic_sheet <- mpr_sheet_old(series)
+  if (!is.na(classic_sheet)) {
+    parts$classic <- parse_projection_sheet(path, classic_sheet, series)
+  }
+
+  scenario_sheet <- mpr_sheet_scenario(series)
+  if (!is.na(scenario_sheet)) {
+    pool <- hybrid_scenario_pool(readxl::excel_sheets(path))
+    parts$scenario <- parse_scenario_sheet(path, scenario_sheet, series,
+                                           release, candidates = pool)
+  }
+
+  parts <- parts[!vapply(parts, is.null, logical(1L))]
+  if (length(parts) == 0L) return(NULL)
+  do.call(rbind, unname(parts))
+}
+
+
+#' Publication date of a release (first day of the publication month)
+#' @noRd
+release_pub_date <- function(release) {
+  m <- match(tolower(release$month), tolower(month.name))
+  as.Date(sprintf("%d-%02d-01", release$year, m))
 }
 
 
@@ -249,42 +406,26 @@ mpr_resolve_url <- function(month, year) {
 }
 
 
-#' Select the most recent compatible (parseable) MPR release
+#' Select the most recent published MPR release
 #'
-#' Walks back through candidate releases, newest first, probing each
-#' URL. The first release that both exists and uses the classic
-#' "Projections Databank" workbook is returned. Newer releases that use
-#' the unsupported scenario format are skipped with a warning. Errors
-#' only if no compatible release resolves in the lookback window.
+#' Walks back through candidate releases, newest first, and returns the
+#' first one whose data archive exists. Both the classic and the
+#' scenario-based formats are parsed, so no format filtering is needed.
+#' Errors only if no release resolves in the lookback window.
 #' @noRd
 pick_mpr_release <- function(today = Sys.Date(), cache = TRUE,
                              max_lookback = 8L) {
   candidates <- mpr_release_candidates(today, n_months = max_lookback)
-  skipped    <- character(0)
 
   for (rel in candidates) {
     url <- mpr_resolve_url(rel$month, rel$year)
     if (is.null(url)) next
-
     zip_path <- download_mpr_zip(rel$month, rel$year, cache = cache, url = url)
-
-    if (mpr_zip_is_old_format(zip_path)) {
-      if (length(skipped) > 0L) {
-        rel_label <- sprintf("%s %d", tools::toTitleCase(rel$month), rel$year)
-        cli::cli_warn(c(
-          "!" = "Skipping newer MPR release(s) in the Bank of England's new scenario-based format, not parsed by {.fn boe_mpr_forecasts} yet: {.val {skipped}}.",
-          "i" = "Returning the most recent compatible release: {rel_label}."
-        ))
-      }
-      return(list(release = rel, zip_path = zip_path))
-    }
-    skipped <- c(skipped, sprintf("%s %d", tools::toTitleCase(rel$month),
-                                  rel$year))
+    return(list(release = rel, zip_path = zip_path))
   }
 
   cli::cli_abort(c(
-    "Could not find a compatible MPR release in the last {max_lookback} months.",
-    "i" = "Recent releases may use the Bank's new scenario-based format (not parsed by {.fn boe_mpr_forecasts} yet).",
+    "Could not find a published MPR release in the last {max_lookback} months.",
     "i" = "Check your network connection, or request a known release with {.arg month} and {.arg year}."
   ))
 }
@@ -344,22 +485,6 @@ download_mpr_zip <- function(month, year, cache = TRUE, url = NULL) {
     }
   )
   cache_file
-}
-
-
-#' Does an MPR zip contain the classic (parseable) Projections Databank?
-#'
-#' The April 2026 redesign renamed the workbook to "Scenario Projections
-#' Databank" and changed its layout. We treat a release as compatible
-#' only when it ships a databank workbook whose name does not contain
-#' "Scenario".
-#' @noRd
-mpr_zip_is_old_format <- function(zip_path) {
-  files <- tryCatch(utils::unzip(zip_path, list = TRUE)$Name,
-                    error = function(e) character(0))
-  db <- files[grepl("Projections Databank", files, fixed = TRUE) &
-              grepl("\\.xlsx?$", files, ignore.case = TRUE)]
-  any(!grepl("Scenario", db, fixed = TRUE))
 }
 
 
@@ -454,6 +579,88 @@ parse_projection_sheet <- function(path, sheet_name, series_name) {
     horizon      = rep(quarter_labels, each  = nrow(vals)),
     horizon_date = rep(horizon_dates,  each  = nrow(vals)),
     series       = series_name,
+    scenario     = NA_character_,
+    value        = as.numeric(vals),
+    stringsAsFactors = FALSE
+  )
+  long <- long[!is.na(long$value), , drop = FALSE]
+  rownames(long) <- NULL
+  long
+}
+
+
+#' Resolve a scenario-databank sheet name, preferring the quarterly sheet
+#'
+#' The scenario databank carries each series twice: a quarterly sheet
+#' (e.g. "2. CPI inflation") and an annual duplicate (e.g. "9. CPI
+#' inflation"). Sheet numbers drift, so we match on the descriptive name
+#' and take the first hit, which is the quarterly sheet (it precedes the
+#' annual one). Returns `NA` if the series is absent from the workbook.
+#' @noRd
+resolve_scenario_sheet <- function(sheets, target, series_name) {
+  if (target %in% sheets) return(target)
+  key  <- sub("^\\d+\\.\\s*", "", target)
+  hits <- grep(key, sheets, ignore.case = TRUE, fixed = FALSE, value = TRUE)
+  if (length(hits) == 0L) return(NA_character_)
+  hits[[1L]]
+}
+
+
+#' Parse one sheet of the scenario-based (transposed) databank
+#'
+#' Scenario sheets hold a single series with quarter labels down column
+#' A (under a "Date" header) and one column per scenario or vintage
+#' (e.g. "February 2026 central", "April 2026 Scenario A"). Returns the
+#' full quarterly path for every scenario in long format, or `NULL` if
+#' the sheet is absent from the workbook. `candidates` restricts the
+#' sheets considered (used for hybrid workbooks, whose classic section
+#' carries same-named sheets in a different layout).
+#' @noRd
+parse_scenario_sheet <- function(path, sheet_name, series_name, release,
+                                 candidates = NULL) {
+  sheets <- readxl::excel_sheets(path)
+  if (!is.null(candidates)) sheets <- intersect(sheets, candidates)
+  sheet  <- resolve_scenario_sheet(sheets, sheet_name, series_name)
+  if (is.na(sheet)) return(NULL)
+
+  raw <- suppressMessages(readxl::read_excel(
+    path, sheet = sheet, col_names = FALSE
+  ))
+  raw <- as.data.frame(raw, stringsAsFactors = FALSE)
+
+  hdr_row <- which(tolower(trimws(as.character(raw[[1L]]))) == "date")[1L]
+  if (is.na(hdr_row)) {
+    cli::cli_abort("Could not find the {.val Date} header row in sheet {.val {sheet}}.")
+  }
+
+  scen_labels <- as.character(unlist(raw[hdr_row, -1L]))
+  keep        <- !is.na(scen_labels) & nzchar(trimws(scen_labels))
+  scen_labels <- trimws(scen_labels[keep])
+  if (length(scen_labels) == 0L) {
+    cli::cli_abort("No scenario columns found in sheet {.val {sheet}}.")
+  }
+
+  body <- raw[(hdr_row + 1L):nrow(raw), c(TRUE, keep), drop = FALSE]
+  qtr  <- trimws(as.character(body[[1L]]))
+  is_q <- grepl("^\\d{4}\\s*Q[1-4]$", qtr)
+  body <- body[is_q, , drop = FALSE]
+  qtr  <- qtr[is_q]
+  if (length(qtr) == 0L) {
+    cli::cli_abort("No quarter-label rows found in sheet {.val {sheet}}.")
+  }
+
+  vals <- suppressWarnings(matrix(
+    as.numeric(as.matrix(body[, -1L, drop = FALSE])),
+    nrow = length(qtr),
+    ncol = length(scen_labels)
+  ))
+
+  long <- data.frame(
+    date         = release_pub_date(release),
+    horizon      = rep(qtr,                  times = length(scen_labels)),
+    horizon_date = rep(quarter_label_to_date(qtr), times = length(scen_labels)),
+    series       = series_name,
+    scenario     = rep(scen_labels,          each  = length(qtr)),
     value        = as.numeric(vals),
     stringsAsFactors = FALSE
   )

@@ -1,3 +1,58 @@
+# boe 0.4.0
+
+## Monetary Policy Report: scenario and hybrid formats
+
+* `boe_mpr_forecasts()` now parses all three Projections Databank
+  layouts the Bank has published since the Bernanke review of
+  forecasting: the classic format (February 2026 and earlier), the
+  scenario-based "Scenario Projections Databank" (April 2026), and the
+  hybrid workbook introduced with the July 2026 report, which restores
+  the classic central-projection sheets (including GDP level and Bank
+  Rate) and adds a "Quarterly scenarios" section. The format is
+  detected automatically and all three share one output schema.
+* New `scenario` column. Scenario paths (e.g. `"Adverse Scenario"`,
+  `"Milder Scenario"`) are labelled in `scenario`; central projections
+  carry `NA`. For hybrid releases a single call returns both the
+  central projections for every publication vintage and the current
+  report's scenario paths.
+* The `series` argument gains four series published in the scenario
+  sheets from April 2026: `"output_gap"`, `"energy_prices"`,
+  `"average_earnings"`, and `"world_export_prices"`. The default series
+  set is unchanged.
+* Series that a release does not publish are skipped with a warning
+  rather than erroring: the scenario-only series are absent from
+  classic releases, and the April 2026 release alone drops
+  `"gdp_level"` and `"bank_rate"` (Bank Rate was published as a
+  conditioning assumption). Hybrid releases publish all nine series.
+* Automatic release selection now returns the most recent published
+  release of any format, rather than falling back to the most recent
+  classic-format release.
+
+## Consumer credit: monthly headline measure
+
+* `boe_consumer_credit()` now defaults to the headline measure
+  excluding the Student Loans Company (`LPMBI2O`, `LPMVZRJ`,
+  `LPMB4TS`), the series updated every month in the Bank's Money and
+  Credit release. The previous default series including student loans
+  (`LPMVZRI`, `LPMVZRK`) are only updated once a year, when the Student
+  Loans Company publishes its data, so their recent months trailed the
+  headline measure by up to a year (at the time of this release they
+  stopped at March 2026). Levels for `"total"` and `"other"` are
+  therefore lower than in previous versions; `"credit_card"` is
+  identical under both measures.
+* New `include_student_loans` argument restores the previous series
+  selection: `boe_consumer_credit(include_student_loans = TRUE)`.
+* The `boe_series` catalogue now lists both measures (54 series).
+
+## Caching
+
+* Statistical database responses now expire after 30 days rather than
+  being cached indefinitely, so BoE revisions eventually reach queries
+  pinned to a fixed date range. Queries whose `to` date is today are
+  unaffected (they already produced a fresh URL, and so a fresh
+  download, each day). Configurable via `options(boe.cache_ttl_h = )`;
+  set it to `Inf` to freeze the cache for a reproducible run.
+
 # boe 0.3.0
 
 ## Yield curves: historical archive and panel helper

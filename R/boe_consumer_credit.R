@@ -4,12 +4,25 @@
 #' credit cards, and other consumer credit). Seasonally adjusted.
 #' Available from April 1993.
 #'
+#' By default the headline measure excluding the Student Loans Company
+#' is returned. This is the measure updated every month in the Bank's
+#' Money and Credit release. The alternative measure including student
+#' loans is only updated once a year, when the Student Loans Company
+#' publishes its data, so its recent months lag the headline measure by
+#' up to a year; request it with `include_student_loans = TRUE`.
+#'
 #' @param type Character vector. One or more of `"total"`, `"credit_card"`,
 #'   `"other"`. Defaults to all three.
 #' @param from Date or character (YYYY-MM-DD). Start date. Defaults to
 #'   `"1993-04-01"`.
 #' @param to Date or character (YYYY-MM-DD). End date. Defaults to today.
 #' @param cache Logical. Use cached data if available (default `TRUE`).
+#' @param include_student_loans Logical. If `FALSE` (default), the
+#'   monthly headline series excluding the Student Loans Company are
+#'   used (`LPMBI2O`, `LPMVZRJ`, `LPMB4TS`). If `TRUE`, the annually
+#'   updated series including student loans are used (`LPMVZRI`,
+#'   `LPMVZRJ`, `LPMVZRK`); note their most recent months trail the
+#'   headline measure. Credit cards are identical under both measures.
 #'
 #' @return A data frame with columns:
 #'   \describe{
@@ -34,15 +47,24 @@
 boe_consumer_credit <- function(type  = c("total", "credit_card", "other"),
                                 from  = "1993-04-01",
                                 to    = Sys.Date(),
-                                cache = TRUE) {
+                                cache = TRUE,
+                                include_student_loans = FALSE) {
 
   type <- match.arg(type, several.ok = TRUE)
 
-  code_map <- c(
-    "total"       = "LPMVZRI",
-    "credit_card" = "LPMVZRJ",
-    "other"       = "LPMVZRK"
-  )
+  code_map <- if (isTRUE(include_student_loans)) {
+    c(
+      "total"       = "LPMVZRI",
+      "credit_card" = "LPMVZRJ",
+      "other"       = "LPMVZRK"
+    )
+  } else {
+    c(
+      "total"       = "LPMBI2O",
+      "credit_card" = "LPMVZRJ",
+      "other"       = "LPMB4TS"
+    )
+  }
 
   codes <- code_map[type]
 

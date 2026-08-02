@@ -11,7 +11,8 @@ boe_consumer_credit(
   type = c("total", "credit_card", "other"),
   from = "1993-04-01",
   to = Sys.Date(),
-  cache = TRUE
+  cache = TRUE,
+  include_student_loans = FALSE
 )
 }
 \arguments{
@@ -24,6 +25,13 @@ boe_consumer_credit(
 \item{to}{Date or character (YYYY-MM-DD). End date. Defaults to today.}
 
 \item{cache}{Logical. Use cached data if available (default \code{TRUE}).}
+
+\item{include_student_loans}{Logical. If \code{FALSE} (default), the
+monthly headline series excluding the Student Loans Company are
+used (\code{LPMBI2O}, \code{LPMVZRJ}, \code{LPMB4TS}). If \code{TRUE}, the annually
+updated series including student loans are used (\code{LPMVZRI},
+\code{LPMVZRJ}, \code{LPMVZRK}); note their most recent months trail the
+headline measure. Credit cards are identical under both measures.}
 }
 \value{
 A data frame with columns:
@@ -38,6 +46,14 @@ pounds).}
 Downloads monthly outstanding amounts of consumer credit (total,
 credit cards, and other consumer credit). Seasonally adjusted.
 Available from April 1993.
+}
+\details{
+By default the headline measure excluding the Student Loans Company
+is returned. This is the measure updated every month in the Bank's
+Money and Credit release. The alternative measure including student
+loans is only updated once a year, when the Student Loans Company
+publishes its data, so its recent months lag the headline measure by
+up to a year; request it with \code{include_student_loans = TRUE}.
 }
 \examples{
 \donttest{
